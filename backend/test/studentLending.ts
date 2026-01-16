@@ -108,5 +108,124 @@ describe("StudentLending", function () {
     // Add more: max amount, existing loan, insufficient liquidity...
   });
 
-  // Add repay, isOverdue, etc. similarly
+  describe("Repay", function () {
+    let borrowAmount: bigint;
+    let repayAmount: bigint;
+
+    beforeEach(async function () {
+      // Setup: deposit liquidity + verify + borrow
+      const depositAmount = ethers.parseUnits("5000", TOKEN_DECIMALS);
+      await token
+        .connect(lender)
+        .approve(await lending.getAddress(), depositAmount);
+      await lending.connect(lender).deposit(depositAmount);
+
+      await lending.verifyStudent(student.address, true);
+
+      borrowAmount = ethers.parseUnits("1000", TOKEN_DECIMALS);
+      await lending.connect(student).borrow(borrowAmount);
+
+      repayAmount = borrowAmount + (borrowAmount * 5n) / 100n; // principal + 5%
+    });
+
+    it("should allow repay, transfer correct amount, mark repaid, and increase totalDeposited", async function () {
+      // Give student enough tokens to repay
+      await token.mint(student.address, repayAmount);
+      await token
+        .connect(student)
+        .approve(await lending.getAddress(), repayAmount);
+
+      const poolBefore = await lending.totalDeposited();
+
+      await lending.connect(student).repay();
+
+      const loan = await lending.getLoanDetails(student.address);
+      expect(loan.repaid).to.be.true;
+      expect(loan.active).to.be.false;
+
+      const poolAfter = await lending.totalDeposited();
+      expect(poolAfter).to.equal(poolBefore + repayAmount); // + principal + interest
+
+      // Optional: check token balance of contract increased
+      const contractBalanceAfter = await token.balanceOf(
+        await lending.getAddress()
+      );
+      expect(contractBalanceAfter).to.be.gt(0); // at least something is there
+    });
+
+    it("should revert when trying to repay with no active loan", async function () {
+      // First repay normally to clear the loan
+      await token.mint(student.address, repayAmount);
+      await token
+        .connect(student)
+        .approve(await lending.getAddress(), repayAmount);
+      await lending.connect(student).repay();
+
+      // Now try again → should fail
+      await expect(lending.connect(student).repay()).to.be.revertedWith(
+        "No active loan"
+      );
+    });
+  });
+
+  describe("Borrow edge cases", function () {
+    beforeEach(async function () {
+      // Deposit some but limited liquidity
+      const smallDeposit = ethers.parseUnits("500", TOKEN_DECIMALS);
+      await token
+        .connect(lender)
+        .approve(await lending.getAddress(), smallDeposit);
+      await lending.connect(lender).deposit(smallDeposit);
+
+      await lending.verifyStudent(student.address, true);
+    });
+
+    it("should revert when borrow amount exceeds available liquidity", async function () {
+      const tooMuch = ethers.parseUnits("1001", TOKEN_DECIMALS); // more than deposited 500
+
+      await expect(lending.connect(student).borrow(tooMuch)).to.be.revertedWith(
+        "Insufficient liquidity"
+      );
+    });
+  });
+
+  describe("isOverdue", function () {
+    beforeEach(async function () {
+      const depositAmount = ethers.parseUnits("2000", TOKEN_DECIMALS);
+      await token
+        .connect(lender)
+        .approve(await lending.getAddress(), depositAmount);
+      await lending.connect(lender).deposit(depositAmount);
+
+      await lending.verifyStudent(student.address, true);
+
+      await lending
+        .connect(student)
+        .borrow(ethers.parseUnits("500", TOKEN_DECIMALS));
+    });
+
+    it("should return false before due date", async function () {
+      expect(await lending.isOverdue(student.address)).to.be.false;
+    });
+
+    it("should return false during grace period", async function () {
+      // Advance time to just after 90 days but within 7-day grace
+      await ethers.provider.send("evm_increaseTime", [
+        120 * 24 * 60 * 60 + 3 * 24 * 60 * 60,
+      ]);
+      await ethers.provider.send("evm_mine", []); // mine a block to apply time
+
+      expect(await lending.isOverdue(student.address)).to.be.false;
+    });
+
+    it("should return true after grace period ends", async function () {
+      // Advance past 90 days + 7 days grace
+      await ethers.provider.send("evm_increaseTime", [
+        (120 + 20 + 1) * 24 * 60 * 60,
+      ]);
+      await ethers.provider.send("evm_mine", []);
+
+      expect(await lending.isOverdue(student.address)).to.be.true;
+    });
+  });
 });
