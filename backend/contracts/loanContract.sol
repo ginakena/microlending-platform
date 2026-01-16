@@ -13,8 +13,8 @@ contract StudentLending is Ownable, ReentrancyGuard {
 
     uint256 public constant FIXED_INTEREST_RATE = 5; // 5% simple interest
     uint256 public constant MAX_LOAN_AMOUNT = 500 * 10 ** 6; // $500 (6 decimals like USDC)
-    uint256 public constant LOAN_DURATION = 90 days;
-    uint256 public constant GRACE_PERIOD = 7 days;
+    uint256 public constant LOAN_DURATION = 120 days;
+    uint256 public constant GRACE_PERIOD = 30 days;
 
     uint256 public totalDeposited;
 
