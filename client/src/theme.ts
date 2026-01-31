@@ -17,6 +17,16 @@ const theme = createTheme({
   typography: {
     fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: "none",
+          borderRadius: 12,
+        },
+      },
+    },
+  },
 });
 
 export default theme;

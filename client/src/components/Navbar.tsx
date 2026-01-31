@@ -9,6 +9,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit"; // ← add this import
 
 export default function Navbar() {
   const location = useLocation();
@@ -79,11 +80,16 @@ export default function Navbar() {
           ))}
         </Box>
 
-        {/* Connect Wallet (desktop) */}
+        {/* Connect Wallet (desktop) – real RainbowKit button */}
         <Box sx={{ display: { xs: "none", md: "block" }, ml: 2 }}>
-          <Button variant="contained" color="secondary">
-            Connect Wallet
-          </Button>
+          <ConnectButton
+            showBalance={false}
+            chainStatus="icon"
+            accountStatus={{
+              smallScreen: "address",
+              largeScreen: "full",
+            }}
+          />
         </Box>
 
         {/* Mobile Hamburger */}
@@ -119,10 +125,9 @@ export default function Navbar() {
                 {link.name}
               </MenuItem>
             ))}
+            {/* Real RainbowKit ConnectButton in mobile menu */}
             <MenuItem onClick={handleMobileMenuClose}>
-              <Button variant="contained" color="secondary" fullWidth>
-                Connect Wallet
-              </Button>
+              <ConnectButton />
             </MenuItem>
           </Menu>
         </Box>
