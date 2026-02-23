@@ -29,13 +29,25 @@ import {
 } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { useState, useEffect } from "react";
+import { maxUint256 } from "viem";
+import { sepolia } from "wagmi/chains";
 
 const GridItem = Grid as React.ElementType;
 
+// Your real deployed contract address
 const CONTRACT_ADDRESS =
   "0x6A2c4F0A5faAe8594aa127861A14ebCd441906Cd" as `0x${string}`;
 
-// Full ABI derived from the Solidity source
+// Your deployed ERC-20 token address (mock USDC or your test token)
+const TOKEN_ADDRESS =
+  "0x91E4eBe667fac488efE1eEd352314f127794835D" as `0x${string}`;
+
+// Token decimals (USDC-style, 6 decimals)
+const DECIMALS = 6;
+// Max loan: $500 in token units
+const MAX_LOAN_DISPLAY = 500;
+
+// Full ABI
 const ABI = [
   {
     name: "totalDeposited",
@@ -98,50 +110,49 @@ const ABI = [
     inputs: [],
     outputs: [],
   },
-  // Events (needed for type completeness, wagmi doesn't require them for writes)
+] as const;
+
+// ERC20 ABI for approval and allowance
+const ERC20_ABI = [
   {
-    name: "Deposited",
-    type: "event",
+    name: "approve",
+    type: "function",
+    stateMutability: "nonpayable",
     inputs: [
-      { name: "lender", type: "address", indexed: true },
-      { name: "amount", type: "uint256", indexed: false },
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
     ],
+    outputs: [{ name: "", type: "bool" }],
   },
   {
-    name: "Borrowed",
-    type: "event",
+    name: "allowance",
+    type: "function",
+    stateMutability: "view",
     inputs: [
-      { name: "borrower", type: "address", indexed: true },
-      { name: "principal", type: "uint256", indexed: false },
-      { name: "repayAmount", type: "uint256", indexed: false },
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
     ],
+    outputs: [{ name: "", type: "uint256" }],
   },
   {
-    name: "Repaid",
-    type: "event",
-    inputs: [
-      { name: "borrower", type: "address", indexed: true },
-      { name: "amount", type: "uint256", indexed: false },
-    ],
+    name: "balanceOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;
 
-// Token decimals (USDC-style, 6 decimals)
-const DECIMALS = 6;
-// Max loan: $500 in token units
-const MAX_LOAN_DISPLAY = 500;
-
 export default function Dashboard() {
   const theme = useTheme();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chain } = useAccount();
 
-  // ─── Dialog state ──────────────────────────────────────────────
+  // ─── Dialog & Toast state ──────────────────────────────────────
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [borrowOpen, setBorrowOpen] = useState(false);
   const [borrowAmount, setBorrowAmount] = useState("");
 
-  // ─── Toast state ───────────────────────────────────────────────
   const [toast, setToast] = useState<{
     open: boolean;
     msg: string;
@@ -151,11 +162,13 @@ export default function Dashboard() {
     msg: "",
     severity: "success",
   });
+
   const showToast = (msg: string, severity: "success" | "error" = "success") =>
     setToast({ open: true, msg, severity });
 
   // ─── Contract READS ────────────────────────────────────────────
 
+  // Total Deposited
   const {
     data: totalRaw,
     isLoading: isLoadingPool,
@@ -165,40 +178,112 @@ export default function Dashboard() {
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "totalDeposited",
-    query: { enabled: isConnected },
+    query: { enabled: isConnected && chain?.id === sepolia.id },
   });
 
+  const totalFormatted =
+    totalRaw !== undefined
+      ? Number(formatUnits(totalRaw, 6)).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : "0.00";
+
+  // Verification Status
   const {
-    data: isVerified,
+    data: isVerifiedRaw,
     isLoading: isLoadingVerified,
+    error: verifiedError,
     refetch: refetchVerified,
   } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "verifiedStudents",
     args: [address!],
-    query: { enabled: isConnected && !!address },
+    query: { enabled: isConnected && !!address && chain?.id === sepolia.id },
   });
 
+  const isVerified = isVerifiedRaw ?? false;
+
+  // Loan Details
   const {
     data: loanData,
     isLoading: isLoadingLoan,
+    error: loanError,
     refetch: refetchLoan,
   } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "getLoanDetails",
     args: [address!],
-    query: { enabled: isConnected && !!address },
+    query: { enabled: isConnected && !!address && chain?.id === sepolia.id },
   });
 
+  const userLoan = loanData as
+    | {
+        principal: bigint;
+        startTime: bigint;
+        repayAmount: bigint;
+        active: boolean;
+        repaid: boolean;
+      }
+    | undefined;
+
+  const hasActiveLoan = loan?.active && !loan?.repaid;
+
+  // Is Overdue
   const { data: isOverdue } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "isOverdue",
     args: [address!],
-    query: { enabled: isConnected && !!address && !!loanData?.active },
+    query: {
+      enabled:
+        isConnected && !!address && chain?.id === sepolia.id && hasActiveLoan,
+    },
   });
+
+  // Token Balance
+  const { data: tokenBalanceRaw } = useReadContract({
+    address: TOKEN_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: "balanceOf",
+    args: [address!],
+    query: { enabled: isConnected && !!address && chain?.id === sepolia.id },
+  });
+
+  const formattedBalance = tokenBalanceRaw
+    ? Number(formatUnits(tokenBalanceRaw, 6)).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : "0.00";
+
+  // Allowance for deposit
+  const { data: depositAllowance, refetch: refetchDepositAllowance } =
+    useReadContract({
+      address: TOKEN_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: "allowance",
+      args: [address!, CONTRACT_ADDRESS],
+      query: {
+        enabled:
+          isConnected && !!address && depositOpen && chain?.id === sepolia.id,
+      },
+    });
+
+  // Allowance for repay
+  const { data: repayAllowance, refetch: refetchRepayAllowance } =
+    useReadContract({
+      address: TOKEN_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: "allowance",
+      args: [address!, CONTRACT_ADDRESS],
+      query: {
+        enabled:
+          isConnected && !!address && hasActiveLoan && chain?.id === sepolia.id,
+      },
+    });
 
   // ─── Contract WRITES ───────────────────────────────────────────
 
@@ -210,37 +295,46 @@ export default function Dashboard() {
     reset: resetWrite,
   } = useWriteContract();
 
-  // Track which action is in flight so we can show the right pending state
   const [pendingAction, setPendingAction] = useState<
-    "deposit" | "borrow" | "repay" | null
+    "deposit" | "borrow" | "repay" | "approve_deposit" | "approve_repay" | null
   >(null);
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({ hash: txHash });
+    useWaitForTransactionReceipt({
+      hash: txHash,
+    });
 
-  // Refetch & notify after tx confirms
+  // Refetch after tx confirms
   useEffect(() => {
     if (isConfirmed) {
       refetchPool();
-      refetchLoan();
       refetchVerified();
+      refetchLoan();
+      refetchDepositAllowance();
+      refetchRepayAllowance();
 
       const msgs: Record<string, string> = {
         deposit: "Deposit confirmed!",
         borrow: "Loan disbursed!",
         repay: "Loan repaid successfully!",
+        approve_deposit: "Approval confirmed! Now deposit.",
+        approve_repay: "Approval confirmed! Now repay.",
       };
+
       showToast(msgs[pendingAction ?? "deposit"] ?? "Transaction confirmed!");
+
+      if (!pendingAction?.startsWith("approve_")) {
+        setDepositAmount("");
+        setBorrowAmount("");
+        setDepositOpen(false);
+        setBorrowOpen(false);
+      }
+
       setPendingAction(null);
       resetWrite();
-      setDepositAmount("");
-      setBorrowAmount("");
-      setDepositOpen(false);
-      setBorrowOpen(false);
     }
   }, [isConfirmed]);
 
-  // Surface write errors
   useEffect(() => {
     if (writeError) {
       const msg =
@@ -252,6 +346,26 @@ export default function Dashboard() {
 
   // ─── Handlers ──────────────────────────────────────────────────
 
+  const handleApproveDeposit = () => {
+    setPendingAction("approve_deposit");
+    writeContract({
+      address: TOKEN_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [CONTRACT_ADDRESS, maxUint256],
+    });
+  };
+
+  const handleApproveRepay = () => {
+    setPendingAction("approve_repay");
+    writeContract({
+      address: TOKEN_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [CONTRACT_ADDRESS, maxUint256],
+    });
+  };
+
   const handleDeposit = () => {
     if (
       !depositAmount ||
@@ -262,6 +376,12 @@ export default function Dashboard() {
       return;
     }
     const raw = parseUnits(depositAmount, DECIMALS);
+
+    if (!depositAllowance || depositAllowance < raw) {
+      showToast("Token approval required first", "error");
+      return;
+    }
+
     setPendingAction("deposit");
     writeContract({
       address: CONTRACT_ADDRESS,
@@ -295,6 +415,13 @@ export default function Dashboard() {
   };
 
   const handleRepay = () => {
+    if (!loan?.repayAmount) return;
+
+    if (!repayAllowance || repayAllowance < loan.repayAmount) {
+      showToast("Token approval required first", "error");
+      return;
+    }
+
     setPendingAction("repay");
     writeContract({
       address: CONTRACT_ADDRESS,
@@ -303,15 +430,7 @@ export default function Dashboard() {
     });
   };
 
-  // ─── Derived display values ────────────────────────────────────
-
-  const totalFormatted =
-    totalRaw !== undefined
-      ? Number(formatUnits(totalRaw, DECIMALS)).toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : "0.00";
+  // ─── Derived values ────────────────────────────────────────────
 
   const loan = loanData as
     | {
@@ -330,10 +449,10 @@ export default function Dashboard() {
     : 0;
   const loanRepay = loan ? Number(formatUnits(loan.repayAmount, DECIMALS)) : 0;
 
-  // Due date = startTime + 120 days + 20 days grace
   const dueDateMs = loan?.startTime
     ? Number(loan.startTime) * 1000 + (120 + 20) * 24 * 60 * 60 * 1000
     : null;
+
   const dueDateStr = dueDateMs
     ? new Date(dueDateMs).toLocaleDateString("en-GB", {
         day: "numeric",
@@ -342,11 +461,8 @@ export default function Dashboard() {
       })
     : "—";
 
-  // Repaid % = (repayAmount - outstanding) / repayAmount — we don't track partial
-  // repayments in this contract, so just show 0% until fully repaid.
   const repaidPercent = hasActiveLoan ? 0 : loan?.repaid ? 100 : 0;
 
-  // Role derived from on-chain state
   const userRole: "borrower" | "lender" | "none" = hasActiveLoan
     ? "borrower"
     : isVerified
@@ -361,95 +477,28 @@ export default function Dashboard() {
 
   const isBusy = isTxPending || isConfirming;
 
-  // ─── Activity card content ─────────────────────────────────────
+  const depositAmountRaw = depositAmount
+    ? parseUnits(depositAmount, DECIMALS)
+    : 0n;
+  const needsDepositApproval =
+    !depositAllowance || depositAllowance < depositAmountRaw;
 
-  const activityContent = () => {
-    if (isLoadingLoan) {
-      return (
-        <Box pt={1}>
-          <Skeleton variant="text" width="50%" height={40} />
-          <Skeleton variant="text" width="70%" />
-          <Skeleton
-            variant="rectangular"
-            height={10}
-            sx={{ mt: 2, borderRadius: 5 }}
-          />
-        </Box>
-      );
-    }
-
-    if (hasActiveLoan) {
-      return (
-        <>
-          <Typography variant="h6" gutterBottom>
-            Active Loan
-          </Typography>
-          <Typography variant="h4" fontWeight="bold">
-            $
-            {loanPrincipal.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-            })}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
-            Total to repay: ${loanRepay.toFixed(2)} (incl. 5% interest)
-          </Typography>
-          {isOverdue && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              This loan is overdue!
-            </Alert>
-          )}
-          <Box mt={2}>
-            <LinearProgress
-              variant="determinate"
-              value={repaidPercent}
-              sx={{ height: 10, borderRadius: 5, mb: 1 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              {repaidPercent}% repaid • Due: {dueDateStr}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{ mt: 3 }}
-            onClick={handleRepay}
-            disabled={isBusy && pendingAction === "repay"}
-          >
-            {isBusy && pendingAction === "repay" ? "Repaying…" : "Repay Now"}
-          </Button>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            display="block"
-            mt={1}
-            textAlign="center"
-          >
-            Make sure you have approved the token spend before repaying.
-          </Typography>
-        </>
-      );
-    }
-
-    if (loan?.repaid) {
-      return (
-        <Alert severity="success">
-          Your previous loan has been fully repaid. You can apply for a new one!
-        </Alert>
-      );
-    }
-
-    return (
-      <Typography variant="body1" color="text.secondary" mt={4}>
-        No activity yet. Start by depositing to the pool or applying for a loan.
-      </Typography>
-    );
-  };
+  const needsRepayApproval =
+    loan?.repayAmount && repayAllowance
+      ? repayAllowance < loan.repayAmount
+      : true;
 
   // ─── Render ────────────────────────────────────────────────────
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
+      {/* Network Check */}
+      {isConnected && chain?.id !== sepolia.id && (
+        <Alert severity="warning" sx={{ mb: 4, maxWidth: 600, mx: "auto" }}>
+          Please switch to Sepolia network in your wallet to see real data
+        </Alert>
+      )}
+
       {/* Hero */}
       <Box textAlign="center" mb={10}>
         <Typography
@@ -464,6 +513,7 @@ export default function Dashboard() {
         <Typography variant="h6" color="text.secondary" gutterBottom>
           Secure, low-interest loans for Kenyan students
         </Typography>
+
         {isLoadingVerified ? (
           <Skeleton
             variant="rounded"
@@ -481,11 +531,17 @@ export default function Dashboard() {
         )}
       </Box>
 
-      {/* Contract error */}
+      {/* Errors */}
       {poolError && (
         <Alert severity="error" sx={{ mb: 4 }}>
           Failed to load pool data:{" "}
-          {poolError.message || "Check network and contract address"}
+          {poolError.message || "Check network/contract"}
+        </Alert>
+      )}
+
+      {verifiedError && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          Verification check failed: {verifiedError.message}
         </Alert>
       )}
 
@@ -524,12 +580,7 @@ export default function Dashboard() {
                     Role: {roleDisplay[userRole]}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" mt={1}>
-                    Verification:{" "}
-                    {isLoadingVerified
-                      ? "Checking…"
-                      : isVerified
-                        ? "✅ Student verified on-chain"
-                        : "❌ Not verified (contact admin)"}
+                    Token Balance: ${formattedBalance}
                   </Typography>
                   {!isVerified && isConnected && (
                     <Alert severity="info" sx={{ mt: 2 }}>
@@ -584,7 +635,7 @@ export default function Dashboard() {
           </Card>
         </GridItem>
 
-        {/* Your Activity – LIVE */}
+        {/* Your Activity */}
         <GridItem xs={12} md={6}>
           <Card
             sx={{ height: "100%", bgcolor: "background.paper", boxShadow: 6 }}
@@ -613,7 +664,7 @@ export default function Dashboard() {
               fullWidth
               sx={{ py: 3 }}
               onClick={() => setDepositOpen(true)}
-              disabled={!isConnected || isBusy}
+              disabled={!isConnected || isBusy || chain?.id !== sepolia.id}
             >
               Deposit to Pool
             </Button>
@@ -624,7 +675,13 @@ export default function Dashboard() {
               fullWidth
               sx={{ py: 3 }}
               onClick={() => setBorrowOpen(true)}
-              disabled={!isConnected || !isVerified || hasActiveLoan || isBusy}
+              disabled={
+                !isConnected ||
+                !isVerified ||
+                hasActiveLoan ||
+                isBusy ||
+                chain?.id !== sepolia.id
+              }
             >
               {!isConnected
                 ? "Connect Wallet to Borrow"
@@ -637,7 +694,7 @@ export default function Dashboard() {
           </Box>
         </GridItem>
 
-        {/* Footer */}
+        {/* Trust & Safety */}
         <GridItem xs={12}>
           <Box textAlign="center" mt={6}>
             <Typography variant="body2" color="text.secondary">
@@ -648,7 +705,7 @@ export default function Dashboard() {
         </GridItem>
       </Grid>
 
-      {/* ── Deposit Dialog ── */}
+      {/* Deposit Dialog */}
       <Dialog
         open={depositOpen}
         onClose={() => setDepositOpen(false)}
@@ -658,8 +715,10 @@ export default function Dashboard() {
         <DialogTitle>Deposit to Pool</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            Enter the amount of lending tokens to deposit. Make sure you have
-            approved this contract to spend your tokens first.
+            Enter the amount of lending tokens to deposit.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={1}>
+            Your balance: ${formattedBalance}
           </Typography>
           <TextField
             label="Amount (USD)"
@@ -670,22 +729,51 @@ export default function Dashboard() {
             inputProps={{ min: 0, step: "0.01" }}
             autoFocus
           />
+          {depositAmount && needsDepositApproval && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              You need to approve token spending first (one-time step).
+            </Alert>
+          )}
+          {depositAmount && !needsDepositApproval && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              ✅ Token approval sufficient. Ready to deposit!
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDepositOpen(false)} disabled={isBusy}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleDeposit} disabled={isBusy}>
-            {isBusy && pendingAction === "deposit"
-              ? isConfirming
-                ? "Confirming…"
-                : "Waiting…"
-              : "Deposit"}
-          </Button>
+          {needsDepositApproval && depositAmount ? (
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={handleApproveDeposit}
+              disabled={isBusy || !depositAmount}
+            >
+              {isBusy && pendingAction === "approve_deposit"
+                ? isConfirming
+                  ? "Confirming…"
+                  : "Approving…"
+                : "Approve Tokens"}
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              onClick={handleDeposit}
+              disabled={isBusy || !depositAmount}
+            >
+              {isBusy && pendingAction === "deposit"
+                ? isConfirming
+                  ? "Confirming…"
+                  : "Waiting…"
+                : "Deposit"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
-      {/* ── Borrow Dialog ── */}
+      {/* Borrow Dialog */}
       <Dialog
         open={borrowOpen}
         onClose={() => setBorrowOpen(false)}
@@ -738,7 +826,7 @@ export default function Dashboard() {
         </DialogActions>
       </Dialog>
 
-      {/* ── Toast ── */}
+      {/* Toast */}
       <Snackbar
         open={toast.open}
         autoHideDuration={5000}
