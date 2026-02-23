@@ -38,16 +38,16 @@ const GridItem = Grid as React.ElementType;
 const CONTRACT_ADDRESS =
   "0x6A2c4F0A5faAe8594aa127861A14ebCd441906Cd" as `0x${string}`;
 
-// Your deployed ERC-20 token address (mock USDC or your test token)
+// Your deployed ERC-20 token address
 const TOKEN_ADDRESS =
   "0x91E4eBe667fac488efE1eEd352314f127794835D" as `0x${string}`;
 
-// Token decimals (USDC-style, 6 decimals)
+// Token decimals (6 like USDC)
 const DECIMALS = 6;
-// Max loan: $500 in token units
+// Max loan amount in USD
 const MAX_LOAN_DISPLAY = 500;
 
-// Full ABI
+// ABI for StudentLending contract
 const ABI = [
   {
     name: "totalDeposited",
@@ -112,7 +112,7 @@ const ABI = [
   },
 ] as const;
 
-// ERC20 ABI for approval and allowance
+// ERC20 ABI (for allowance, approve, balanceOf)
 const ERC20_ABI = [
   {
     name: "approve",
@@ -147,12 +147,13 @@ export default function Dashboard() {
   const theme = useTheme();
   const { address, isConnected, chain } = useAccount();
 
-  // ─── Dialog & Toast state ──────────────────────────────────────
+  // Dialogs
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [borrowOpen, setBorrowOpen] = useState(false);
   const [borrowAmount, setBorrowAmount] = useState("");
 
+  // Toast
   const [toast, setToast] = useState<{
     open: boolean;
     msg: string;
@@ -183,7 +184,7 @@ export default function Dashboard() {
 
   const totalFormatted =
     totalRaw !== undefined
-      ? Number(formatUnits(totalRaw, 6)).toLocaleString(undefined, {
+      ? Number(formatUnits(totalRaw, DECIMALS)).toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })
@@ -229,10 +230,10 @@ export default function Dashboard() {
       }
     | undefined;
 
-  const hasActiveLoan = loan?.active && !loan?.repaid;
+  const hasActiveLoan = userLoan?.active && !userLoan?.repaid;
 
   // Is Overdue
-  const { data: isOverdue } = useReadContract({
+  const { data: isOverdue, refetch: refetchOverdue } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "isOverdue",
@@ -244,7 +245,7 @@ export default function Dashboard() {
   });
 
   // Token Balance
-  const { data: tokenBalanceRaw } = useReadContract({
+  const { data: tokenBalanceRaw, refetch: refetchBalance } = useReadContract({
     address: TOKEN_ADDRESS,
     abi: ERC20_ABI,
     functionName: "balanceOf",
@@ -253,7 +254,7 @@ export default function Dashboard() {
   });
 
   const formattedBalance = tokenBalanceRaw
-    ? Number(formatUnits(tokenBalanceRaw, 6)).toLocaleString(undefined, {
+    ? Number(formatUnits(tokenBalanceRaw, DECIMALS)).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })
@@ -310,8 +311,10 @@ export default function Dashboard() {
       refetchPool();
       refetchVerified();
       refetchLoan();
+      refetchOverdue();
       refetchDepositAllowance();
       refetchRepayAllowance();
+      refetchBalance();
 
       const msgs: Record<string, string> = {
         deposit: "Deposit confirmed!",
@@ -415,9 +418,9 @@ export default function Dashboard() {
   };
 
   const handleRepay = () => {
-    if (!loan?.repayAmount) return;
+    if (!userLoan?.repayAmount) return;
 
-    if (!repayAllowance || repayAllowance < loan.repayAmount) {
+    if (!repayAllowance || repayAllowance < userLoan.repayAmount) {
       showToast("Token approval required first", "error");
       return;
     }
@@ -432,49 +435,6 @@ export default function Dashboard() {
 
   // ─── Derived values ────────────────────────────────────────────
 
-  const loan = loanData as
-    | {
-        principal: bigint;
-        startTime: bigint;
-        repayAmount: bigint;
-        active: boolean;
-        repaid: boolean;
-      }
-    | undefined;
-
-  const hasActiveLoan = loan?.active && !loan?.repaid;
-
-  const loanPrincipal = loan
-    ? Number(formatUnits(loan.principal, DECIMALS))
-    : 0;
-  const loanRepay = loan ? Number(formatUnits(loan.repayAmount, DECIMALS)) : 0;
-
-  const dueDateMs = loan?.startTime
-    ? Number(loan.startTime) * 1000 + (120 + 20) * 24 * 60 * 60 * 1000
-    : null;
-
-  const dueDateStr = dueDateMs
-    ? new Date(dueDateMs).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
-
-  const repaidPercent = hasActiveLoan ? 0 : loan?.repaid ? 100 : 0;
-
-  const userRole: "borrower" | "lender" | "none" = hasActiveLoan
-    ? "borrower"
-    : isVerified
-      ? "borrower"
-      : "none";
-
-  const roleDisplay: Record<typeof userRole, string> = {
-    borrower: "Verified Student / Borrower",
-    lender: "Lender",
-    none: "Explore Options",
-  };
-
   const isBusy = isTxPending || isConfirming;
 
   const depositAmountRaw = depositAmount
@@ -484,8 +444,8 @@ export default function Dashboard() {
     !depositAllowance || depositAllowance < depositAmountRaw;
 
   const needsRepayApproval =
-    loan?.repayAmount && repayAllowance
-      ? repayAllowance < loan.repayAmount
+    userLoan?.repayAmount && repayAllowance
+      ? repayAllowance < userLoan.repayAmount
       : true;
 
   // ─── Render ────────────────────────────────────────────────────
@@ -542,6 +502,12 @@ export default function Dashboard() {
       {verifiedError && (
         <Alert severity="error" sx={{ mb: 4 }}>
           Verification check failed: {verifiedError.message}
+        </Alert>
+      )}
+
+      {loanError && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          Failed to load loan details: {loanError.message}
         </Alert>
       )}
 
