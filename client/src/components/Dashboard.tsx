@@ -34,20 +34,22 @@ import { sepolia } from "wagmi/chains";
 
 const GridItem = Grid as React.ElementType;
 
-// Your real deployed contract address
+// ─────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────
+
 const CONTRACT_ADDRESS =
   "0x6A2c4F0A5faAe8594aa127861A14ebCd441906Cd" as `0x${string}`;
-
-// Your deployed ERC-20 token address
 const TOKEN_ADDRESS =
   "0x91E4eBe667fac488efE1eEd352314f127794835D" as `0x${string}`;
 
-// Token decimals (6 like USDC)
-const DECIMALS = 6;
-// Max loan amount in USD
-const MAX_LOAN_DISPLAY = 500;
+const DECIMALS = 2; // whole KSh
+const MAX_LOAN_DISPLAY = 60000; // KSh
 
-// ABI for StudentLending contract
+// ─────────────────────────────────────────────
+// ABIs
+// ─────────────────────────────────────────────
+
 const ABI = [
   {
     name: "totalDeposited",
@@ -112,7 +114,6 @@ const ABI = [
   },
 ] as const;
 
-// ERC20 ABI (for allowance, approve, balanceOf)
 const ERC20_ABI = [
   {
     name: "approve",
@@ -143,17 +144,20 @@ const ERC20_ABI = [
   },
 ] as const;
 
+// ─────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────
+
 export default function Dashboard() {
   const theme = useTheme();
   const { address, isConnected, chain } = useAccount();
 
-  // Dialogs
+  // ─── State ─────────────────────────────────────────────
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [borrowOpen, setBorrowOpen] = useState(false);
   const [borrowAmount, setBorrowAmount] = useState("");
 
-  // Toast
   const [toast, setToast] = useState<{
     open: boolean;
     msg: string;
@@ -167,7 +171,7 @@ export default function Dashboard() {
   const showToast = (msg: string, severity: "success" | "error" = "success") =>
     setToast({ open: true, msg, severity });
 
-  // ─── Contract READS ────────────────────────────────────────────
+  // ─── Contract Reads ─────────────────────────────────────
 
   // Total Deposited
   const {
@@ -184,13 +188,10 @@ export default function Dashboard() {
 
   const totalFormatted =
     totalRaw !== undefined
-      ? Number(formatUnits(totalRaw, DECIMALS)).toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : "0.00";
+      ? Number(formatUnits(totalRaw, DECIMALS)).toLocaleString("en-KE")
+      : "0";
 
-  // Verification Status
+  // Verification
   const {
     data: isVerifiedRaw,
     isLoading: isLoadingVerified,
@@ -232,7 +233,7 @@ export default function Dashboard() {
 
   const hasActiveLoan = userLoan?.active && !userLoan?.repaid;
 
-  // Is Overdue
+  // Overdue check
   const { data: isOverdue, refetch: refetchOverdue } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
@@ -254,13 +255,10 @@ export default function Dashboard() {
   });
 
   const formattedBalance = tokenBalanceRaw
-    ? Number(formatUnits(tokenBalanceRaw, DECIMALS)).toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    : "0.00";
+    ? Number(formatUnits(tokenBalanceRaw, DECIMALS)).toLocaleString("en-KE")
+    : "0";
 
-  // Allowance for deposit
+  // Allowances
   const { data: depositAllowance, refetch: refetchDepositAllowance } =
     useReadContract({
       address: TOKEN_ADDRESS,
@@ -273,7 +271,6 @@ export default function Dashboard() {
       },
     });
 
-  // Allowance for repay
   const { data: repayAllowance, refetch: refetchRepayAllowance } =
     useReadContract({
       address: TOKEN_ADDRESS,
@@ -286,7 +283,7 @@ export default function Dashboard() {
       },
     });
 
-  // ─── Contract WRITES ───────────────────────────────────────────
+  // ─── Writes ────────────────────────────────────────────────
 
   const {
     writeContract,
@@ -305,49 +302,7 @@ export default function Dashboard() {
       hash: txHash,
     });
 
-  // Refetch after tx confirms
-  useEffect(() => {
-    if (isConfirmed) {
-      refetchPool();
-      refetchVerified();
-      refetchLoan();
-      refetchOverdue();
-      refetchDepositAllowance();
-      refetchRepayAllowance();
-      refetchBalance();
-
-      const msgs: Record<string, string> = {
-        deposit: "Deposit confirmed!",
-        borrow: "Loan disbursed!",
-        repay: "Loan repaid successfully!",
-        approve_deposit: "Approval confirmed! Now deposit.",
-        approve_repay: "Approval confirmed! Now repay.",
-      };
-
-      showToast(msgs[pendingAction ?? "deposit"] ?? "Transaction confirmed!");
-
-      if (!pendingAction?.startsWith("approve_")) {
-        setDepositAmount("");
-        setBorrowAmount("");
-        setDepositOpen(false);
-        setBorrowOpen(false);
-      }
-
-      setPendingAction(null);
-      resetWrite();
-    }
-  }, [isConfirmed]);
-
-  useEffect(() => {
-    if (writeError) {
-      const msg =
-        (writeError as Error).message?.split("\n")[0] ?? "Transaction failed";
-      showToast(msg, "error");
-      setPendingAction(null);
-    }
-  }, [writeError]);
-
-  // ─── Handlers ──────────────────────────────────────────────────
+  // ─── Handlers ──────────────────────────────────────────────
 
   const handleApproveDeposit = () => {
     setPendingAction("approve_deposit");
@@ -404,7 +359,10 @@ export default function Dashboard() {
       return;
     }
     if (Number(borrowAmount) > MAX_LOAN_DISPLAY) {
-      showToast(`Max loan is $${MAX_LOAN_DISPLAY}`, "error");
+      showToast(
+        `Max loan is KSh ${MAX_LOAN_DISPLAY.toLocaleString("en-KE")}`,
+        "error",
+      );
       return;
     }
     const raw = parseUnits(borrowAmount, DECIMALS);
@@ -447,6 +405,134 @@ export default function Dashboard() {
     userLoan?.repayAmount && repayAllowance
       ? repayAllowance < userLoan.repayAmount
       : true;
+
+  // Loan calculations (moved here so activityContent can access them)
+  const loanPrincipal = userLoan
+    ? Number(formatUnits(userLoan.principal, DECIMALS))
+    : 0;
+  const loanRepay = userLoan
+    ? Number(formatUnits(userLoan.repayAmount, DECIMALS))
+    : 0;
+
+  const dueDateMs = userLoan?.startTime
+    ? Number(userLoan.startTime) * 1000 + (120 + 20) * 24 * 60 * 60 * 1000
+    : null;
+
+  const dueDateStr = dueDateMs
+    ? new Date(dueDateMs).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
+
+  const repaidPercent = hasActiveLoan ? 0 : userLoan?.repaid ? 100 : 0;
+
+  const roleDisplay: Record<"borrower" | "lender" | "none", string> = {
+    borrower: "Verified Student / Borrower",
+    lender: "Lender",
+    none: "Explore Options",
+  };
+
+  const userRole: "borrower" | "lender" | "none" = hasActiveLoan
+    ? "borrower"
+    : isVerified
+      ? "borrower"
+      : "none";
+
+  // ─── Activity Content ─────────────────────────────────────────
+
+  const activityContent = () => {
+    if (isLoadingLoan) {
+      return (
+        <Box pt={1}>
+          <Skeleton variant="text" width="50%" height={40} />
+          <Skeleton variant="text" width="70%" />
+          <Skeleton
+            variant="rectangular"
+            height={10}
+            sx={{ mt: 2, borderRadius: 5 }}
+          />
+        </Box>
+      );
+    }
+
+    if (hasActiveLoan) {
+      return (
+        <>
+          <Typography variant="h6" gutterBottom>
+            Active Loan
+          </Typography>
+          <Typography variant="h4" fontWeight="bold">
+            KSh {loanPrincipal.toLocaleString("en-KE")}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
+            Total to repay: KSh {loanRepay.toLocaleString("en-KE")} (incl. 5%
+            interest)
+          </Typography>
+          {isOverdue && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              This loan is overdue!
+            </Alert>
+          )}
+          <Box mt={2}>
+            <LinearProgress
+              variant="determinate"
+              value={repaidPercent}
+              sx={{ height: 10, borderRadius: 5, mb: 1 }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {repaidPercent}% repaid • Due: {dueDateStr}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color={needsRepayApproval ? "warning" : "primary"}
+            fullWidth
+            sx={{ mt: 3 }}
+            onClick={needsRepayApproval ? handleApproveRepay : handleRepay}
+            disabled={
+              isBusy &&
+              (pendingAction === "repay" || pendingAction === "approve_repay")
+            }
+          >
+            {isBusy && pendingAction === "approve_repay"
+              ? "Approving…"
+              : isBusy && pendingAction === "repay"
+                ? "Repaying…"
+                : needsRepayApproval
+                  ? "Step 1: Approve Tokens"
+                  : "Repay Now"}
+          </Button>
+          {needsRepayApproval && (
+            <Typography
+              variant="caption"
+              color="warning.main"
+              display="block"
+              mt={1}
+              textAlign="center"
+            >
+              You need to approve token spending first, then repay.
+            </Typography>
+          )}
+        </>
+      );
+    }
+
+    if (userLoan?.repaid) {
+      return (
+        <Alert severity="success">
+          Your previous loan has been fully repaid. You can apply for a new one!
+        </Alert>
+      );
+    }
+
+    return (
+      <Typography variant="body1" color="text.secondary" mt={4}>
+        No activity yet. Start by depositing to the pool or applying for a loan.
+      </Typography>
+    );
+  };
 
   // ─── Render ────────────────────────────────────────────────────
 
@@ -546,7 +632,7 @@ export default function Dashboard() {
                     Role: {roleDisplay[userRole]}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" mt={1}>
-                    Token Balance: ${formattedBalance}
+                    Token Balance: KSh {formattedBalance}
                   </Typography>
                   {!isVerified && isConnected && (
                     <Alert severity="info" sx={{ mt: 2 }}>
@@ -561,7 +647,7 @@ export default function Dashboard() {
           </Card>
         </GridItem>
 
-        {/* Pool Overview – LIVE */}
+        {/* Pool Overview */}
         <GridItem xs={12} md={6}>
           <Card
             sx={{ height: "100%", bgcolor: "background.paper", boxShadow: 6 }}
@@ -582,7 +668,7 @@ export default function Dashboard() {
                     fontWeight="bold"
                     color="text.primary"
                   >
-                    ${totalFormatted}
+                    KSh {totalFormatted}
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
                     available for loans
@@ -591,7 +677,8 @@ export default function Dashboard() {
               )}
               <Box mt={4}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Max loan per student: ${MAX_LOAN_DISPLAY}
+                  Max loan per student: KSh{" "}
+                  {MAX_LOAN_DISPLAY.toLocaleString("en-KE")}
                 </Typography>
                 <Typography variant="subtitle2" color="text.secondary">
                   Interest: 5% fixed • Term: 120 days + 20 day grace
@@ -660,7 +747,7 @@ export default function Dashboard() {
           </Box>
         </GridItem>
 
-        {/* Trust & Safety */}
+        {/* Footer */}
         <GridItem xs={12}>
           <Box textAlign="center" mt={6}>
             <Typography variant="body2" color="text.secondary">
@@ -684,15 +771,15 @@ export default function Dashboard() {
             Enter the amount of lending tokens to deposit.
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={1}>
-            Your balance: ${formattedBalance}
+            Your balance: KSh {formattedBalance}
           </Typography>
           <TextField
-            label="Amount (USD)"
+            label="Amount (KSh)"
             type="number"
             fullWidth
             value={depositAmount}
             onChange={(e) => setDepositAmount(e.target.value)}
-            inputProps={{ min: 0, step: "0.01" }}
+            inputProps={{ min: 0, step: "1" }}
             autoFocus
           />
           {depositAmount && needsDepositApproval && (
@@ -749,25 +836,27 @@ export default function Dashboard() {
         <DialogTitle>Apply for Loan</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            Enter the amount you want to borrow (max ${MAX_LOAN_DISPLAY}). You
-            will repay{" "}
+            Enter the amount you want to borrow (max KSh{" "}
+            {MAX_LOAN_DISPLAY.toLocaleString("en-KE")}). You will repay{" "}
             {borrowAmount
-              ? `$${(Number(borrowAmount) * 1.05).toFixed(2)}`
+              ? `KSh ${Math.round(Number(borrowAmount) * 1.05).toLocaleString("en-KE")}`
               : "principal + 5%"}{" "}
-            within 120 days.
+            within 120 days + 20-day grace period.
           </Typography>
           <TextField
-            label={`Amount (USD, max $${MAX_LOAN_DISPLAY})`}
+            label={`Amount (KSh, max ${MAX_LOAN_DISPLAY.toLocaleString("en-KE")})`}
             type="number"
             fullWidth
             value={borrowAmount}
             onChange={(e) => setBorrowAmount(e.target.value)}
-            inputProps={{ min: 0, max: MAX_LOAN_DISPLAY, step: "0.01" }}
+            inputProps={{ min: 0, max: MAX_LOAN_DISPLAY, step: "1" }}
             autoFocus
           />
           {borrowAmount && (
             <Alert severity="info" sx={{ mt: 2 }}>
-              You will repay ${(Number(borrowAmount) * 1.05).toFixed(2)} by{" "}
+              You will repay KSh{" "}
+              {Math.round(Number(borrowAmount) * 1.05).toLocaleString("en-KE")}{" "}
+              by{" "}
               {new Date(
                 Date.now() + 140 * 24 * 60 * 60 * 1000,
               ).toLocaleDateString("en-GB", {
