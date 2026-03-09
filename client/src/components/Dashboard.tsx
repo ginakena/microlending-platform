@@ -31,6 +31,7 @@ import { formatUnits, parseUnits } from "viem";
 import { useState, useEffect } from "react";
 import { maxUint256 } from "viem";
 import { sepolia } from "wagmi/chains";
+import VerificationDialog from "../components/verificationDialog";
 
 const GridItem = Grid as React.ElementType;
 
@@ -157,6 +158,7 @@ export default function Dashboard() {
   const [depositAmount, setDepositAmount] = useState("");
   const [borrowOpen, setBorrowOpen] = useState(false);
   const [borrowAmount, setBorrowAmount] = useState("");
+  const [verificationOpen, setVerificationOpen] = useState(false);
 
   const [toast, setToast] = useState<{
     open: boolean;
@@ -302,6 +304,51 @@ export default function Dashboard() {
       hash: txHash,
     });
 
+  // Refetch on confirmation
+  useEffect(() => {
+    if (isConfirmed) {
+      refetchPool();
+      refetchLoan();
+      refetchVerified();
+      refetchBalance();
+
+      const msgs: Record<string, string> = {
+        deposit: "Deposit confirmed!",
+        borrow: "Loan disbursed!",
+        repay: "Loan repaid successfully!",
+        approve_deposit: "Approval confirmed! Now deposit.",
+        approve_repay: "Approval confirmed! Now repay.",
+      };
+      showToast(msgs[pendingAction ?? ""] ?? "Transaction confirmed!");
+
+      if (pendingAction === "approve_deposit") {
+        refetchDepositAllowance();
+      }
+      if (pendingAction === "approve_repay") {
+        refetchRepayAllowance();
+      }
+
+      if (!pendingAction?.startsWith("approve_")) {
+        setDepositAmount("");
+        setBorrowAmount("");
+        setDepositOpen(false);
+        setBorrowOpen(false);
+      }
+
+      setPendingAction(null);
+      resetWrite();
+    }
+  }, [isConfirmed]);
+
+  useEffect(() => {
+    if (writeError) {
+      const msg =
+        (writeError as Error).message?.split("\n")[0] ?? "Transaction failed";
+      showToast(msg, "error");
+      setPendingAction(null);
+    }
+  }, [writeError]);
+
   // ─── Handlers ──────────────────────────────────────────────
 
   const handleApproveDeposit = () => {
@@ -406,7 +453,6 @@ export default function Dashboard() {
       ? repayAllowance < userLoan.repayAmount
       : true;
 
-  // Loan calculations (moved here so activityContent can access them)
   const loanPrincipal = userLoan
     ? Number(formatUnits(userLoan.principal, DECIMALS))
     : 0;
@@ -635,11 +681,20 @@ export default function Dashboard() {
                     Token Balance: KSh {formattedBalance}
                   </Typography>
                   {!isVerified && isConnected && (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      To borrow, your wallet must be verified by the platform
-                      admin. Share your address with the admin:{" "}
-                      <strong>{address}</strong>
-                    </Alert>
+                    <>
+                      <Alert severity="info" sx={{ mt: 2 }}>
+                        To borrow, your wallet must be verified by the platform
+                        admin.
+                      </Alert>
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        sx={{ mt: 2 }}
+                        onClick={() => setVerificationOpen(true)}
+                      >
+                        Request Verification
+                      </Button>
+                    </>
                   )}
                 </Box>
               </Box>
@@ -880,6 +935,14 @@ export default function Dashboard() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Verification Dialog */}
+      <VerificationDialog
+        open={verificationOpen}
+        onClose={() => setVerificationOpen(false)}
+        walletAddress={address ?? ""}
+        isVerified={isVerified}
+      />
 
       {/* Toast */}
       <Snackbar
