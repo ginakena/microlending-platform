@@ -1,27 +1,35 @@
 {
-  "name": "backend",
+  "name": "student-lending-backend",
   "version": "1.0.0",
+  "description": "Smart contracts for Student Micro-Lending Platform",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run deploy/deploy.ts --network sepolia",
+    "deploy:mock": "hardhat run deploy/deployMockToken.ts --network sepolia",
+    "deploy:local": "hardhat run deploy/deploy.ts --network localhost",
+    "node": "hardhat node",
+    "clean": "hardhat clean"
   },
-  "keywords": [],
+  "keywords": ["blockchain", "lending", "defi", "student-loans"],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
   "devDependencies": {
-    "@chainlink/contracts": "^1.4.0",
-    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
-    "@types/node": "^25.0.8",
-    "dotenv": "^17.2.3",
-    "ethers": "^6.16.0",
-    "hardhat-deploy": "^1.0.4",
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/node": "^20.10.0",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.19.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typechain": "^8.3.2",
+    "typescript": "^5.3.3"
   },
-  "type": "commonjs",
   "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0",
-    "hardhat": "^2.22.3"
+    "@openzeppelin/contracts": "^5.0.1",
+    "ethers": "^6.10.0"
   }
 }
