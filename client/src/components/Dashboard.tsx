@@ -17,10 +17,18 @@ import {
   DialogContent,
   DialogActions,
   Snackbar,
+  Paper,
+  IconButton,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import WarningIcon from "@mui/icons-material/Warning";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import LocalAtmIcon from "@mui/icons-material/LocalAtm";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import SecurityIcon from "@mui/icons-material/Security";
 import {
   useAccount,
   useReadContract,
@@ -35,22 +43,16 @@ import VerificationDialog from "../components/verificationDialog";
 
 const GridItem = Grid as React.ElementType;
 
-// ─────────────────────────────────────────────
 // Constants
-// ─────────────────────────────────────────────
-
 const CONTRACT_ADDRESS =
   "0x6A2c4F0A5faAe8594aa127861A14ebCd441906Cd" as `0x${string}`;
 const TOKEN_ADDRESS =
   "0x91E4eBe667fac488efE1eEd352314f127794835D" as `0x${string}`;
 
-const DECIMALS = 2; // whole KSh
-const MAX_LOAN_DISPLAY = 60000; // KSh
+const DECIMALS = 2;
+const MAX_LOAN_DISPLAY = 60000;
 
-// ─────────────────────────────────────────────
 // ABIs
-// ─────────────────────────────────────────────
-
 const ABI = [
   {
     name: "totalDeposited",
@@ -145,15 +147,11 @@ const ERC20_ABI = [
   },
 ] as const;
 
-// ─────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────
-
 export default function Dashboard() {
   const theme = useTheme();
   const { address, isConnected, chain } = useAccount();
 
-  // ─── State ─────────────────────────────────────────────
+  // State
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [borrowOpen, setBorrowOpen] = useState(false);
@@ -173,9 +171,7 @@ export default function Dashboard() {
   const showToast = (msg: string, severity: "success" | "error" = "success") =>
     setToast({ open: true, msg, severity });
 
-  // ─── Contract Reads ─────────────────────────────────────
-
-  // Total Deposited
+  // Contract Reads
   const {
     data: totalRaw,
     isLoading: isLoadingPool,
@@ -193,11 +189,9 @@ export default function Dashboard() {
       ? Number(formatUnits(totalRaw, DECIMALS)).toLocaleString("en-KE")
       : "0";
 
-  // Verification
   const {
     data: isVerifiedRaw,
     isLoading: isLoadingVerified,
-    error: verifiedError,
     refetch: refetchVerified,
   } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -209,11 +203,9 @@ export default function Dashboard() {
 
   const isVerified = isVerifiedRaw ?? false;
 
-  // Loan Details
   const {
     data: loanData,
     isLoading: isLoadingLoan,
-    error: loanError,
     refetch: refetchLoan,
   } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -235,8 +227,7 @@ export default function Dashboard() {
 
   const hasActiveLoan = userLoan?.active && !userLoan?.repaid;
 
-  // Overdue check
-  const { data: isOverdue, refetch: refetchOverdue } = useReadContract({
+  const { data: isOverdue } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "isOverdue",
@@ -247,7 +238,6 @@ export default function Dashboard() {
     },
   });
 
-  // Token Balance
   const { data: tokenBalanceRaw, refetch: refetchBalance } = useReadContract({
     address: TOKEN_ADDRESS,
     abi: ERC20_ABI,
@@ -260,7 +250,6 @@ export default function Dashboard() {
     ? Number(formatUnits(tokenBalanceRaw, DECIMALS)).toLocaleString("en-KE")
     : "0";
 
-  // Allowances
   const { data: depositAllowance, refetch: refetchDepositAllowance } =
     useReadContract({
       address: TOKEN_ADDRESS,
@@ -285,8 +274,7 @@ export default function Dashboard() {
       },
     });
 
-  // ─── Writes ────────────────────────────────────────────────
-
+  // Writes
   const {
     writeContract,
     data: txHash,
@@ -304,7 +292,6 @@ export default function Dashboard() {
       hash: txHash,
     });
 
-  // Refetch on confirmation
   useEffect(() => {
     if (isConfirmed) {
       refetchPool();
@@ -349,8 +336,7 @@ export default function Dashboard() {
     }
   }, [writeError]);
 
-  // ─── Handlers ──────────────────────────────────────────────
-
+  // Handlers
   const handleApproveDeposit = () => {
     setPendingAction("approve_deposit");
     writeContract({
@@ -438,8 +424,7 @@ export default function Dashboard() {
     });
   };
 
-  // ─── Derived values ────────────────────────────────────────────
-
+  // Derived values
   const isBusy = isTxPending || isConfirming;
 
   const depositAmountRaw = depositAmount
@@ -474,344 +459,642 @@ export default function Dashboard() {
 
   const repaidPercent = hasActiveLoan ? 0 : userLoan?.repaid ? 100 : 0;
 
-  const roleDisplay: Record<"borrower" | "lender" | "none", string> = {
-    borrower: "Verified Student / Borrower",
-    lender: "Lender",
-    none: "Explore Options",
-  };
-
-  const userRole: "borrower" | "lender" | "none" = hasActiveLoan
-    ? "borrower"
-    : isVerified
-      ? "borrower"
-      : "none";
-
-  // ─── Activity Content ─────────────────────────────────────────
-
-  const activityContent = () => {
-    if (isLoadingLoan) {
-      return (
-        <Box pt={1}>
-          <Skeleton variant="text" width="50%" height={40} />
-          <Skeleton variant="text" width="70%" />
-          <Skeleton
-            variant="rectangular"
-            height={10}
-            sx={{ mt: 2, borderRadius: 5 }}
-          />
-        </Box>
-      );
-    }
-
-    if (hasActiveLoan) {
-      return (
-        <>
-          <Typography variant="h6" gutterBottom>
-            Active Loan
-          </Typography>
-          <Typography variant="h4" fontWeight="bold">
-            KSh {loanPrincipal.toLocaleString("en-KE")}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.5}>
-            Total to repay: KSh {loanRepay.toLocaleString("en-KE")} (incl. 5%
-            interest)
-          </Typography>
-          {isOverdue && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              This loan is overdue!
-            </Alert>
-          )}
-          <Box mt={2}>
-            <LinearProgress
-              variant="determinate"
-              value={repaidPercent}
-              sx={{ height: 10, borderRadius: 5, mb: 1 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              {repaidPercent}% repaid • Due: {dueDateStr}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            color={needsRepayApproval ? "warning" : "primary"}
-            fullWidth
-            sx={{ mt: 3 }}
-            onClick={needsRepayApproval ? handleApproveRepay : handleRepay}
-            disabled={
-              isBusy &&
-              (pendingAction === "repay" || pendingAction === "approve_repay")
-            }
-          >
-            {isBusy && pendingAction === "approve_repay"
-              ? "Approving…"
-              : isBusy && pendingAction === "repay"
-                ? "Repaying…"
-                : needsRepayApproval
-                  ? "Step 1: Approve Tokens"
-                  : "Repay Now"}
-          </Button>
-          {needsRepayApproval && (
-            <Typography
-              variant="caption"
-              color="warning.main"
-              display="block"
-              mt={1}
-              textAlign="center"
-            >
-              You need to approve token spending first, then repay.
-            </Typography>
-          )}
-        </>
-      );
-    }
-
-    if (userLoan?.repaid) {
-      return (
-        <Alert severity="success">
-          Your previous loan has been fully repaid. You can apply for a new one!
-        </Alert>
-      );
-    }
-
-    return (
-      <Typography variant="body1" color="text.secondary" mt={4}>
-        No activity yet. Start by depositing to the pool or applying for a loan.
-      </Typography>
-    );
-  };
-
-  // ─── Render ────────────────────────────────────────────────────
-
   return (
-    <Container maxWidth="lg" sx={{ py: 8 }}>
-      {/* Network Check */}
-      {isConnected && chain?.id !== sepolia.id && (
-        <Alert severity="warning" sx={{ mb: 4, maxWidth: 600, mx: "auto" }}>
-          Please switch to Sepolia network in your wallet to see real data
-        </Alert>
-      )}
-
-      {/* Hero */}
-      <Box textAlign="center" mb={10}>
-        <Typography
-          variant="h3"
-          component="h1"
-          gutterBottom
-          fontWeight="bold"
-          color="primary"
-        >
-          Welcome to MicroLend
-        </Typography>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          Secure, low-interest loans for Kenyan students
-        </Typography>
-
-        {isLoadingVerified ? (
-          <Skeleton
-            variant="rounded"
-            width={180}
-            height={36}
-            sx={{ mx: "auto", mt: 2 }}
-          />
-        ) : (
-          <Chip
-            label={isVerified ? "Verified Student" : "Not Verified"}
-            color={isVerified ? "success" : "warning"}
-            icon={isVerified ? <VerifiedUserIcon /> : <WarningIcon />}
-            sx={{ mt: 2, fontSize: "1rem", px: 2, py: 1.5 }}
-          />
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+        pt: 4,
+        pb: 8,
+      }}
+    >
+      <Container maxWidth="lg">
+        {/* Network Check */}
+        {isConnected && chain?.id !== sepolia.id && (
+          <Alert
+            severity="warning"
+            sx={{
+              mb: 4,
+              borderRadius: 3,
+              backdropFilter: "blur(10px)",
+              backgroundColor: "rgba(255, 152, 0, 0.1)",
+              border: "1px solid rgba(255, 152, 0, 0.3)",
+            }}
+          >
+            Please switch to Sepolia network in your wallet
+          </Alert>
         )}
-      </Box>
 
-      {/* Errors */}
-      {poolError && (
-        <Alert severity="error" sx={{ mb: 4 }}>
-          Failed to load pool data:{" "}
-          {poolError.message || "Check network/contract"}
-        </Alert>
-      )}
+        {/* Hero Section */}
+        <Box textAlign="center" mb={6}>
+          <Typography
+            variant="h2"
+            component="h1"
+            gutterBottom
+            sx={{
+              fontWeight: 800,
+              background: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              mb: 2,
+              fontSize: { xs: "2.5rem", md: "3.5rem" },
+            }}
+          >
+            Welcome to MicroLend
+          </Typography>
+          <Typography
+            variant="h5"
+            sx={{
+              color: "rgba(255, 255, 255, 0.7)",
+              fontWeight: 400,
+              mb: 3,
+              fontSize: { xs: "1rem", md: "1.25rem" },
+            }}
+          >
+            Secure, low-interest loans for Kenyan students
+          </Typography>
 
-      {verifiedError && (
-        <Alert severity="error" sx={{ mb: 4 }}>
-          Verification check failed: {verifiedError.message}
-        </Alert>
-      )}
+          {/* Verification Badge */}
+          <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
+            {isLoadingVerified ? (
+              <Skeleton
+                variant="rounded"
+                width={200}
+                height={44}
+                sx={{ borderRadius: 10 }}
+              />
+            ) : (
+              <Chip
+                label={isVerified ? "✓ Verified Student" : "Not Verified"}
+                icon={isVerified ? <VerifiedUserIcon /> : <WarningIcon />}
+                sx={{
+                  px: 3,
+                  py: 2.5,
+                  fontSize: "1.1rem",
+                  fontWeight: 600,
+                  borderRadius: 10,
+                  background: isVerified
+                    ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                    : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  color: "white",
+                  border: "none",
+                  boxShadow: isVerified
+                    ? "0 8px 20px rgba(16, 185, 129, 0.3)"
+                    : "0 8px 20px rgba(245, 158, 11, 0.3)",
+                  "& .MuiChip-icon": { color: "white" },
+                }}
+              />
+            )}
+            {isConnected && (
+              <Chip
+                label={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                icon={<AccountBalanceWalletIcon />}
+                sx={{
+                  px: 3,
+                  py: 2.5,
+                  fontSize: "1rem",
+                  fontWeight: 500,
+                  borderRadius: 10,
+                  background: "rgba(249, 115, 22, 0.1)",
+                  color: "#f97316",
+                  border: "1px solid rgba(249, 115, 22, 0.3)",
+                  backdropFilter: "blur(10px)",
+                  "& .MuiChip-icon": { color: "#f97316" },
+                }}
+              />
+            )}
+          </Box>
+        </Box>
 
-      {loanError && (
-        <Alert severity="error" sx={{ mb: 4 }}>
-          Failed to load loan details: {loanError.message}
-        </Alert>
-      )}
-
-      <Grid container spacing={4}>
-        {/* User Status */}
-        <GridItem xs={12}>
-          <Card sx={{ bgcolor: "background.paper", boxShadow: 6 }}>
-            <CardContent>
-              <Typography variant="h5" gutterBottom color="primary">
-                Your Status
-              </Typography>
-              <Box
-                display="flex"
-                flexDirection={{ xs: "column", md: "row" }}
-                gap={4}
-                alignItems="center"
-              >
+        {/* Stats Cards Row */}
+        <Grid container spacing={3} mb={4}>
+          {/* Total Pool */}
+          <GridItem xs={12} md={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                borderRadius: 4,
+                boxShadow: "0 8px 32px rgba(99, 102, 241, 0.3)",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: "100px",
+                  height: "100px",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "50%",
+                  transform: "translate(30%, -30%)",
+                },
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={2} mb={2}>
                 <Avatar
                   sx={{
-                    width: 100,
-                    height: 100,
-                    bgcolor: "primary.main",
-                    fontSize: "3rem",
+                    bgcolor: "rgba(255, 255, 255, 0.2)",
+                    width: 56,
+                    height: 56,
                   }}
                 >
-                  {address ? address.slice(2, 3).toUpperCase() : "?"}
+                  <TrendingUpIcon sx={{ fontSize: 32, color: "white" }} />
                 </Avatar>
-                <Box flex={1}>
-                  <Typography variant="body1" color="text.secondary">
-                    Wallet:{" "}
-                    {isConnected
-                      ? `${address?.slice(0, 6)}...${address?.slice(-4)}`
-                      : "Not connected"}
+                <Box>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 500 }}
+                  >
+                    Platform Pool
                   </Typography>
-                  <Typography variant="body1" color="text.secondary" mt={1}>
-                    Role: {roleDisplay[userRole]}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" mt={1}>
-                    Token Balance: KSh {formattedBalance}
-                  </Typography>
-                  {!isVerified && isConnected && (
-                    <>
-                      <Alert severity="info" sx={{ mt: 2 }}>
-                        To borrow, your wallet must be verified by the platform
-                        admin.
-                      </Alert>
-                      <Button
-                        variant="outlined"
-                        color="warning"
-                        sx={{ mt: 2 }}
-                        onClick={() => setVerificationOpen(true)}
-                      >
-                        Request Verification
-                      </Button>
-                    </>
+                  {isLoadingPool ? (
+                    <Skeleton
+                      variant="text"
+                      width={120}
+                      height={40}
+                      sx={{ bgcolor: "rgba(255,255,255,0.1)" }}
+                    />
+                  ) : (
+                    <Typography
+                      variant="h4"
+                      sx={{ color: "white", fontWeight: 700 }}
+                    >
+                      KSh {totalFormatted}
+                    </Typography>
                   )}
                 </Box>
               </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-
-        {/* Pool Overview */}
-        <GridItem xs={12} md={6}>
-          <Card
-            sx={{ height: "100%", bgcolor: "background.paper", boxShadow: 6 }}
-          >
-            <CardContent>
-              <Typography variant="h5" gutterBottom color="primary">
-                Platform Pool
+              <Typography
+                variant="caption"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
+                Available for loans
               </Typography>
-              {isLoadingPool ? (
-                <Box sx={{ pt: 1 }}>
-                  <Skeleton variant="text" width="60%" height={60} />
-                  <Skeleton variant="text" width="40%" />
-                </Box>
-              ) : (
-                <>
+            </Paper>
+          </GridItem>
+
+          {/* Your Balance */}
+          <GridItem xs={12} md={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                borderRadius: 4,
+                boxShadow: "0 8px 32px rgba(249, 115, 22, 0.3)",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: "100px",
+                  height: "100px",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "50%",
+                  transform: "translate(30%, -30%)",
+                },
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={2} mb={2}>
+                <Avatar
+                  sx={{
+                    bgcolor: "rgba(255, 255, 255, 0.2)",
+                    width: 56,
+                    height: 56,
+                  }}
+                >
+                  <LocalAtmIcon sx={{ fontSize: 32, color: "white" }} />
+                </Avatar>
+                <Box>
                   <Typography
-                    variant="h3"
-                    fontWeight="bold"
-                    color="text.primary"
+                    variant="body2"
+                    sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 500 }}
                   >
-                    KSh {totalFormatted}
+                    Your Balance
                   </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    available for loans
+                  <Typography
+                    variant="h4"
+                    sx={{ color: "white", fontWeight: 700 }}
+                  >
+                    KSh {formattedBalance}
                   </Typography>
-                </>
-              )}
-              <Box mt={4}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Max loan per student: KSh{" "}
-                  {MAX_LOAN_DISPLAY.toLocaleString("en-KE")}
-                </Typography>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Interest: 5% fixed • Term: 120 days + 20 day grace
-                </Typography>
+                </Box>
               </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-
-        {/* Your Activity */}
-        <GridItem xs={12} md={6}>
-          <Card
-            sx={{ height: "100%", bgcolor: "background.paper", boxShadow: 6 }}
-          >
-            <CardContent>
-              <Typography variant="h5" gutterBottom color="primary">
-                Your Activity
+              <Typography
+                variant="caption"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
+                Token balance
               </Typography>
-              {activityContent()}
-            </CardContent>
-          </Card>
-        </GridItem>
+            </Paper>
+          </GridItem>
 
-        {/* Quick Actions */}
-        <GridItem xs={12}>
-          <Box
-            display="flex"
-            flexDirection={{ xs: "column", sm: "row" }}
-            gap={3}
-            justifyContent="center"
-          >
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              fullWidth
-              sx={{ py: 3 }}
-              onClick={() => setDepositOpen(true)}
-              disabled={!isConnected || isBusy || chain?.id !== sepolia.id}
+          {/* Max Loan */}
+          <GridItem xs={12} md={4}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                borderRadius: 4,
+                boxShadow: "0 8px 32px rgba(16, 185, 129, 0.3)",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: "100px",
+                  height: "100px",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "50%",
+                  transform: "translate(30%, -30%)",
+                },
+              }}
             >
-              Deposit to Pool
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              size="large"
-              fullWidth
-              sx={{ py: 3 }}
-              onClick={() => setBorrowOpen(true)}
-              disabled={
-                !isConnected ||
-                !isVerified ||
-                hasActiveLoan ||
-                isBusy ||
-                chain?.id !== sepolia.id
-              }
+              <Box display="flex" alignItems="center" gap={2} mb={2}>
+                <Avatar
+                  sx={{
+                    bgcolor: "rgba(255, 255, 255, 0.2)",
+                    width: 56,
+                    height: 56,
+                  }}
+                >
+                  <SecurityIcon sx={{ fontSize: 32, color: "white" }} />
+                </Avatar>
+                <Box>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 500 }}
+                  >
+                    Max Loan
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{ color: "white", fontWeight: 700 }}
+                  >
+                    KSh {MAX_LOAN_DISPLAY.toLocaleString("en-KE")}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography
+                variant="caption"
+                sx={{ color: "rgba(255,255,255,0.7)" }}
+              >
+                5% fixed interest • 120 days
+              </Typography>
+            </Paper>
+          </GridItem>
+        </Grid>
+
+        {/* Main Content Grid */}
+        <Grid container spacing={3}>
+          {/* Loan Status Card */}
+          <GridItem xs={12} md={8}>
+            <Card
+              elevation={0}
+              sx={{
+                background: "rgba(255, 255, 255, 0.05)",
+                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: 4,
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                overflow: "hidden",
+              }}
             >
-              {!isConnected
-                ? "Connect Wallet to Borrow"
-                : !isVerified
-                  ? "Verification Required"
-                  : hasActiveLoan
-                    ? "Loan Already Active"
-                    : "Apply for Loan"}
-            </Button>
-          </Box>
-        </GridItem>
+              <CardContent sx={{ p: 4 }}>
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  sx={{
+                    fontWeight: 700,
+                    color: "white",
+                    mb: 3,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <AccessTimeIcon sx={{ color: "#f97316" }} />
+                  Your Activity
+                </Typography>
+
+                {isLoadingLoan ? (
+                  <Box>
+                    <Skeleton
+                      variant="text"
+                      width="50%"
+                      height={40}
+                      sx={{ bgcolor: "rgba(255,255,255,0.1)" }}
+                    />
+                    <Skeleton
+                      variant="text"
+                      width="70%"
+                      sx={{ bgcolor: "rgba(255,255,255,0.1)" }}
+                    />
+                    <Skeleton
+                      variant="rectangular"
+                      height={10}
+                      sx={{ mt: 2, borderRadius: 5, bgcolor: "rgba(255,255,255,0.1)" }}
+                    />
+                  </Box>
+                ) : hasActiveLoan ? (
+                  <Box>
+                    <Box
+                      sx={{
+                        p: 3,
+                        background: "rgba(249, 115, 22, 0.1)",
+                        borderRadius: 3,
+                        border: "1px solid rgba(249, 115, 22, 0.2)",
+                        mb: 3,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{ color: "rgba(255,255,255,0.7)", fontWeight: 600 }}
+                      >
+                        Active Loan
+                      </Typography>
+                      <Typography
+                        variant="h3"
+                        sx={{
+                          fontWeight: 800,
+                          color: "#f97316",
+                          mb: 1,
+                        }}
+                      >
+                        KSh {loanPrincipal.toLocaleString("en-KE")}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "rgba(255,255,255,0.6)" }}
+                      >
+                        Total to repay: KSh {loanRepay.toLocaleString("en-KE")}{" "}
+                        (incl. 5% interest)
+                      </Typography>
+                    </Box>
+
+                    {isOverdue && (
+                      <Alert
+                        severity="error"
+                        sx={{
+                          mb: 2,
+                          borderRadius: 2,
+                          backgroundColor: "rgba(239, 68, 68, 0.1)",
+                          border: "1px solid rgba(239, 68, 68, 0.3)",
+                        }}
+                      >
+                        This loan is overdue!
+                      </Alert>
+                    )}
+
+                    <Box mb={3}>
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        mb={1}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
+                          Repayment Progress
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "#f97316", fontWeight: 600 }}
+                        >
+                          {repaidPercent}%
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={repaidPercent}
+                        sx={{
+                          height: 12,
+                          borderRadius: 10,
+                          backgroundColor: "rgba(255,255,255,0.1)",
+                          "& .MuiLinearProgress-bar": {
+                            borderRadius: 10,
+                            background:
+                              "linear-gradient(90deg, #f97316 0%, #fb923c 100%)",
+                          },
+                        }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "rgba(255,255,255,0.5)", mt: 1, display: "block" }}
+                      >
+                        Due: {dueDateStr}
+                      </Typography>
+                    </Box>
+
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      size="large"
+                      onClick={needsRepayApproval ? handleApproveRepay : handleRepay}
+                      disabled={
+                        isBusy &&
+                        (pendingAction === "repay" ||
+                          pendingAction === "approve_repay")
+                      }
+                      sx={{
+                        py: 2,
+                        borderRadius: 3,
+                        fontWeight: 700,
+                        fontSize: "1.1rem",
+                        textTransform: "none",
+                        background: needsRepayApproval
+                          ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                          : "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                        boxShadow: needsRepayApproval
+                          ? "0 4px 20px rgba(245, 158, 11, 0.4)"
+                          : "0 4px 20px rgba(249, 115, 22, 0.4)",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          boxShadow: needsRepayApproval
+                            ? "0 6px 24px rgba(245, 158, 11, 0.5)"
+                            : "0 6px 24px rgba(249, 115, 22, 0.5)",
+                        },
+                        transition: "all 0.3s ease",
+                      }}
+                    >
+                      {isBusy && pendingAction === "approve_repay"
+                        ? "Approving..."
+                        : isBusy && pendingAction === "repay"
+                          ? "Repaying..."
+                          : needsRepayApproval
+                            ? "Step 1: Approve Tokens"
+                            : "Repay Now"}
+                    </Button>
+                  </Box>
+                ) : userLoan?.repaid ? (
+                  <Alert
+                    icon={<CheckCircleIcon />}
+                    severity="success"
+                    sx={{
+                      borderRadius: 3,
+                      backgroundColor: "rgba(16, 185, 129, 0.1)",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
+                      "& .MuiAlert-icon": { color: "#10b981" },
+                    }}
+                  >
+                    Your previous loan has been fully repaid. You can apply for
+                    a new one!
+                  </Alert>
+                ) : (
+                  <Box textAlign="center" py={4}>
+                    <Typography
+                      variant="body1"
+                      sx={{ color: "rgba(255,255,255,0.5)", mb: 3 }}
+                    >
+                      No activity yet. Start by depositing to the pool or
+                      applying for a loan.
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </GridItem>
+
+          {/* Action Buttons */}
+          <GridItem xs={12} md={4}>
+            <Box display="flex" flexDirection="column" gap={3} height="100%">
+              {/* Deposit Button */}
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                onClick={() => setDepositOpen(true)}
+                disabled={!isConnected || isBusy || chain?.id !== sepolia.id}
+                sx={{
+                  py: 3,
+                  borderRadius: 4,
+                  fontWeight: 700,
+                  fontSize: "1.1rem",
+                  textTransform: "none",
+                  background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                  boxShadow: "0 4px 20px rgba(99, 102, 241, 0.4)",
+                  flex: 1,
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 24px rgba(99, 102, 241, 0.5)",
+                  },
+                  "&:disabled": {
+                    background: "rgba(255,255,255,0.1)",
+                    color: "rgba(255,255,255,0.3)",
+                  },
+                  transition: "all 0.3s ease",
+                }}
+              >
+                💰 Deposit to Pool
+              </Button>
+
+              {/* Borrow Button */}
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                onClick={() => setBorrowOpen(true)}
+                disabled={
+                  !isConnected ||
+                  !isVerified ||
+                  hasActiveLoan ||
+                  isBusy ||
+                  chain?.id !== sepolia.id
+                }
+                sx={{
+                  py: 3,
+                  borderRadius: 4,
+                  fontWeight: 700,
+                  fontSize: "1.1rem",
+                  textTransform: "none",
+                  background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                  boxShadow: "0 4px 20px rgba(249, 115, 22, 0.4)",
+                  flex: 1,
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 24px rgba(249, 115, 22, 0.5)",
+                  },
+                  "&:disabled": {
+                    background: "rgba(255,255,255,0.1)",
+                    color: "rgba(255,255,255,0.3)",
+                  },
+                  transition: "all 0.3s ease",
+                }}
+              >
+                {!isConnected
+                  ? "🔒 Connect Wallet"
+                  : !isVerified
+                    ? "⚠️ Verification Required"
+                    : hasActiveLoan
+                      ? "✓ Loan Active"
+                      : "🎓 Apply for Loan"}
+              </Button>
+
+              {/* Verification Button */}
+              {!isVerified && isConnected && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    background: "rgba(245, 158, 11, 0.1)",
+                    border: "1px solid rgba(245, 158, 11, 0.3)",
+                    borderRadius: 4,
+                    backdropFilter: "blur(10px)",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "rgba(255,255,255,0.7)", mb: 2 }}
+                  >
+                    To borrow, you need to verify your student status
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => setVerificationOpen(true)}
+                    sx={{
+                      borderColor: "#f59e0b",
+                      color: "#f59e0b",
+                      fontWeight: 600,
+                      borderRadius: 3,
+                      py: 1.5,
+                      "&:hover": {
+                        borderColor: "#d97706",
+                        backgroundColor: "rgba(245, 158, 11, 0.1)",
+                      },
+                    }}
+                  >
+                    Request Verification
+                  </Button>
+                </Paper>
+              )}
+            </Box>
+          </GridItem>
+        </Grid>
 
         {/* Footer */}
-        <GridItem xs={12}>
-          <Box textAlign="center" mt={6}>
-            <Typography variant="body2" color="text.secondary">
-              Secured by Blockchain (Sepolia Testnet) • 5% fixed interest • No
-              hidden fees
-            </Typography>
-          </Box>
-        </GridItem>
-      </Grid>
+        <Box textAlign="center" mt={8}>
+          <Typography
+            variant="body2"
+            sx={{ color: "rgba(255,255,255,0.5)", mb: 1 }}
+          >
+            🔒 Secured by Blockchain (Sepolia Testnet)
+          </Typography>
+          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.4)" }}>
+            5% fixed interest • No hidden fees • Student-focused lending
+          </Typography>
+        </Box>
+      </Container>
 
       {/* Deposit Dialog */}
       <Dialog
@@ -819,13 +1102,22 @@ export default function Dashboard() {
         onClose={() => setDepositOpen(false)}
         maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+            borderRadius: 4,
+            border: "1px solid rgba(249, 115, 22, 0.2)",
+          },
+        }}
       >
-        <DialogTitle>Deposit to Pool</DialogTitle>
+        <DialogTitle sx={{ color: "white", fontWeight: 700, fontSize: "1.5rem" }}>
+          Deposit to Pool
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" mb={2}>
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)", mb: 2 }}>
             Enter the amount of lending tokens to deposit.
           </Typography>
-          <Typography variant="body2" color="text.secondary" mb={1}>
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)", mb: 2 }}>
             Your balance: KSh {formattedBalance}
           </Typography>
           <TextField
@@ -836,33 +1128,65 @@ export default function Dashboard() {
             onChange={(e) => setDepositAmount(e.target.value)}
             inputProps={{ min: 0, step: "1" }}
             autoFocus
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                color: "white",
+                "& fieldset": { borderColor: "rgba(249, 115, 22, 0.3)" },
+                "&:hover fieldset": { borderColor: "rgba(249, 115, 22, 0.5)" },
+                "&.Mui-focused fieldset": { borderColor: "#f97316" },
+              },
+              "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.6)" },
+            }}
           />
           {depositAmount && needsDepositApproval && (
-            <Alert severity="warning" sx={{ mt: 2 }}>
+            <Alert
+              severity="warning"
+              sx={{
+                mt: 2,
+                borderRadius: 2,
+                backgroundColor: "rgba(245, 158, 11, 0.1)",
+                border: "1px solid rgba(245, 158, 11, 0.3)",
+              }}
+            >
               You need to approve token spending first (one-time step).
             </Alert>
           )}
           {depositAmount && !needsDepositApproval && (
-            <Alert severity="success" sx={{ mt: 2 }}>
+            <Alert
+              severity="success"
+              sx={{
+                mt: 2,
+                borderRadius: 2,
+                backgroundColor: "rgba(16, 185, 129, 0.1)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+              }}
+            >
               ✅ Token approval sufficient. Ready to deposit!
             </Alert>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDepositOpen(false)} disabled={isBusy}>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={() => setDepositOpen(false)}
+            disabled={isBusy}
+            sx={{ color: "rgba(255,255,255,0.6)" }}
+          >
             Cancel
           </Button>
           {needsDepositApproval && depositAmount ? (
             <Button
               variant="contained"
-              color="warning"
               onClick={handleApproveDeposit}
               disabled={isBusy || !depositAmount}
+              sx={{
+                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                fontWeight: 600,
+              }}
             >
               {isBusy && pendingAction === "approve_deposit"
                 ? isConfirming
-                  ? "Confirming…"
-                  : "Approving…"
+                  ? "Confirming..."
+                  : "Approving..."
                 : "Approve Tokens"}
             </Button>
           ) : (
@@ -870,11 +1194,15 @@ export default function Dashboard() {
               variant="contained"
               onClick={handleDeposit}
               disabled={isBusy || !depositAmount}
+              sx={{
+                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                fontWeight: 600,
+              }}
             >
               {isBusy && pendingAction === "deposit"
                 ? isConfirming
-                  ? "Confirming…"
-                  : "Waiting…"
+                  ? "Confirming..."
+                  : "Waiting..."
                 : "Deposit"}
             </Button>
           )}
@@ -887,10 +1215,19 @@ export default function Dashboard() {
         onClose={() => setBorrowOpen(false)}
         maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+            borderRadius: 4,
+            border: "1px solid rgba(249, 115, 22, 0.2)",
+          },
+        }}
       >
-        <DialogTitle>Apply for Loan</DialogTitle>
+        <DialogTitle sx={{ color: "white", fontWeight: 700, fontSize: "1.5rem" }}>
+          Apply for Loan
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" mb={2}>
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)", mb: 2 }}>
             Enter the amount you want to borrow (max KSh{" "}
             {MAX_LOAN_DISPLAY.toLocaleString("en-KE")}). You will repay{" "}
             {borrowAmount
@@ -906,9 +1243,26 @@ export default function Dashboard() {
             onChange={(e) => setBorrowAmount(e.target.value)}
             inputProps={{ min: 0, max: MAX_LOAN_DISPLAY, step: "1" }}
             autoFocus
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                color: "white",
+                "& fieldset": { borderColor: "rgba(249, 115, 22, 0.3)" },
+                "&:hover fieldset": { borderColor: "rgba(249, 115, 22, 0.5)" },
+                "&.Mui-focused fieldset": { borderColor: "#f97316" },
+              },
+              "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.6)" },
+            }}
           />
           {borrowAmount && (
-            <Alert severity="info" sx={{ mt: 2 }}>
+            <Alert
+              severity="info"
+              sx={{
+                mt: 2,
+                borderRadius: 2,
+                backgroundColor: "rgba(99, 102, 241, 0.1)",
+                border: "1px solid rgba(99, 102, 241, 0.3)",
+              }}
+            >
               You will repay KSh{" "}
               {Math.round(Number(borrowAmount) * 1.05).toLocaleString("en-KE")}{" "}
               by{" "}
@@ -922,15 +1276,27 @@ export default function Dashboard() {
             </Alert>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBorrowOpen(false)} disabled={isBusy}>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={() => setBorrowOpen(false)}
+            disabled={isBusy}
+            sx={{ color: "rgba(255,255,255,0.6)" }}
+          >
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleBorrow} disabled={isBusy}>
+          <Button
+            variant="contained"
+            onClick={handleBorrow}
+            disabled={isBusy}
+            sx={{
+              background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+              fontWeight: 600,
+            }}
+          >
             {isBusy && pendingAction === "borrow"
               ? isConfirming
-                ? "Confirming…"
-                : "Waiting…"
+                ? "Confirming..."
+                : "Waiting..."
               : "Borrow"}
           </Button>
         </DialogActions>
@@ -954,11 +1320,16 @@ export default function Dashboard() {
         <Alert
           severity={toast.severity}
           onClose={() => setToast((t) => ({ ...t, open: false }))}
-          sx={{ width: "100%" }}
+          sx={{
+            width: "100%",
+            borderRadius: 3,
+            fontWeight: 600,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          }}
         >
           {toast.msg}
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 }
