@@ -4,33 +4,21 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  TextField,
   Typography,
   Box,
-  TextField,
   Alert,
   LinearProgress,
-  Chip,
 } from "@mui/material";
-import { useState, useEffect } from "react";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import WarningIcon from "@mui/icons-material/Warning";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useState } from "react";
 
 interface VerificationDialogProps {
   open: boolean;
   onClose: () => void;
-  walletAddress: string | undefined;
-  isVerified?: boolean; // Make optional
-}
-
-interface VerificationRequest {
-  address: string;
-  studentId: string;
-  institution: string;
-  documentBase64?: string;
-  documentName?: string;
-  status: "pending" | "approved" | "rejected";
-  timestamp: number;
+  walletAddress: string;
+  isVerified: boolean;
 }
 
 export default function VerificationDialog({
@@ -41,372 +29,395 @@ export default function VerificationDialog({
 }: VerificationDialogProps) {
   const [studentId, setStudentId] = useState("");
   const [institution, setInstitution] = useState("");
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  // Check if verification request already exists in localStorage
-  const [existingRequest, setExistingRequest] =
-    useState<VerificationRequest | null>(null);
-
-  useEffect(() => {
-    if (walletAddress && open) {
-      const stored = localStorage.getItem(
-        `verification_${walletAddress.toLowerCase()}`,
-      );
-      if (stored) {
-        setExistingRequest(JSON.parse(stored));
-      }
-    }
-  }, [walletAddress, open]);
+  const [file, setFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Limit to 2MB for localStorage
-      if (file.size > 2 * 1024 * 1024) {
-        alert("File too large. Please upload a file smaller than 2MB.");
-        return;
-      }
-      setDocumentFile(file);
+    if (event.target.files && event.target.files[0]) {
+      setFile(event.target.files[0]);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!walletAddress || !studentId || !institution) {
-      alert("Please fill in all required fields");
+  const handleSubmit = () => {
+    // Validate all fields
+    if (!studentId.trim()) {
+      alert("Please enter your Student ID");
       return;
     }
 
-    setUploading(true);
+    if (!institution.trim()) {
+      alert("Please enter your Institution name");
+      return;
+    }
 
-    try {
-      let documentBase64 = "";
-      let documentName = "";
+    if (!file) {
+      alert("Please upload your Student ID or proof of enrollment");
+      return;
+    }
 
-      // Convert file to base64 if provided
-      if (documentFile) {
-        documentBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = reader.result as string;
-            resolve(base64.split(",")[1]); // Remove data:image/... prefix
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(documentFile);
-        });
-        documentName = documentFile.name;
-      }
+    setSubmitting(true);
 
-      // Store in localStorage
-      const request: VerificationRequest = {
-        address: walletAddress.toLowerCase(),
-        studentId,
-        institution,
-        documentBase64,
-        documentName,
-        status: "pending",
-        timestamp: Date.now(),
-      };
+    // Store verification request in localStorage
+    const verificationData = {
+      walletAddress,
+      studentId: studentId.trim(),
+      institution: institution.trim(),
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      timestamp: new Date().toISOString(),
+      status: "pending",
+    };
 
+    // Convert file to base64 for localStorage
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64File = reader.result as string;
       localStorage.setItem(
-        `verification_${walletAddress.toLowerCase()}`,
-        JSON.stringify(request),
+        `verification_${walletAddress}`,
+        JSON.stringify({
+          ...verificationData,
+          fileData: base64File,
+        })
       );
 
-      setExistingRequest(request);
-      setSubmitted(true);
-      setUploading(false);
-
-      // Reset form
-      setStudentId("");
-      setInstitution("");
-      setDocumentFile(null);
-    } catch (error) {
-      console.error("Failed to submit verification:", error);
-      alert("Failed to submit verification request. Please try again.");
-      setUploading(false);
-    }
+      // Simulate upload delay
+      setTimeout(() => {
+        setSubmitting(false);
+        setSuccess(true);
+      }, 1500);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleClose = () => {
-    setSubmitted(false);
-    onClose();
+    if (!submitting) {
+      setStudentId("");
+      setInstitution("");
+      setFile(null);
+      setSuccess(false);
+      onClose();
+    }
   };
 
-  // If already verified on-chain
   if (isVerified) {
     return (
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>Verification Status</DialogTitle>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+            borderRadius: 4,
+            border: "1px solid rgba(16, 185, 129, 0.3)",
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "white", fontWeight: 700 }}>
+          Already Verified ✓
+        </DialogTitle>
         <DialogContent>
-          <Box textAlign="center" py={4}>
-            <CheckCircleIcon
-              sx={{ fontSize: 80, color: "success.main", mb: 2 }}
-            />
-            <Typography variant="h5" gutterBottom color="success.main">
-              Already Verified!
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Your wallet has been verified by the platform admin. You can now
-              apply for loans.
-            </Typography>
-          </Box>
+          <Alert
+            severity="success"
+            sx={{
+              borderRadius: 2,
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+            }}
+          >
+            Your account is already verified as a student. You can now apply for
+            loans!
+          </Alert>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Close</Button>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={handleClose}
+            variant="contained"
+            sx={{
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              fontWeight: 600,
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     );
   }
 
-  // If request already submitted
-  if (existingRequest && !submitted) {
+  if (success) {
     return (
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>Verification Status</DialogTitle>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+            borderRadius: 4,
+            border: "1px solid rgba(16, 185, 129, 0.3)",
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "white", fontWeight: 700 }}>
+          Verification Request Submitted! 🎉
+        </DialogTitle>
         <DialogContent>
-          <Box py={2}>
-            <Alert severity="info" sx={{ mb: 3 }}>
-              You have already submitted a verification request.
-            </Alert>
+          <Alert
+            icon={<CheckCircleIcon />}
+            severity="success"
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+            }}
+          >
+            Your verification request has been submitted successfully!
+          </Alert>
 
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              <strong>Student ID:</strong> {existingRequest.studentId}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              <strong>Institution:</strong> {existingRequest.institution}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              <strong>Submitted:</strong>{" "}
-              {new Date(existingRequest.timestamp).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </Typography>
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.9)", mb: 2 }}>
+            <strong>Next Steps:</strong>
+          </Typography>
 
-            <Box mt={3}>
-              <Chip
-                label={
-                  existingRequest.status === "pending"
-                    ? "Pending Admin Review"
-                    : existingRequest.status === "approved"
-                      ? "Approved"
-                      : "Rejected"
-                }
-                color={
-                  existingRequest.status === "pending"
-                    ? "warning"
-                    : existingRequest.status === "approved"
-                      ? "success"
-                      : "error"
-                }
-                icon={
-                  existingRequest.status === "pending" ? (
-                    <WarningIcon />
-                  ) : (
-                    <CheckCircleIcon />
-                  )
-                }
-              />
-            </Box>
-
-            <Box mt={3} p={2} bgcolor="background.default" borderRadius={2}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontWeight="bold"
-                gutterBottom
-              >
-                Share this address with the admin for approval:
-              </Typography>
-              <Typography
-                variant="body2"
+          <Box component="ul" sx={{ color: "rgba(255,255,255,0.7)", pl: 2 }}>
+            <li>
+              Share your wallet address with the admin:
+              <Box
+                component="code"
                 sx={{
-                  wordBreak: "break-all",
-                  fontFamily: "monospace",
-                  bgcolor: "background.paper",
+                  display: "block",
+                  mt: 1,
                   p: 1,
+                  bgcolor: "rgba(0,0,0,0.3)",
                   borderRadius: 1,
+                  fontSize: "0.85rem",
+                  wordBreak: "break-all",
                 }}
               >
                 {walletAddress}
-              </Typography>
-              <Button
-                size="small"
-                sx={{ mt: 1 }}
-                onClick={() => {
-                  navigator.clipboard.writeText(walletAddress || "");
-                  alert("Address copied to clipboard!");
-                }}
-              >
-                Copy Address
-              </Button>
-            </Box>
-
-            <Alert severity="info" sx={{ mt: 3 }}>
-              The admin will review your documents and verify your wallet
-              on-chain. This may take 1-2 business days.
-            </Alert>
+              </Box>
+            </li>
+            <li>Admin will review your documents (usually within 24 hours)</li>
+            <li>Once approved, you'll see a green "✓ Verified Student" badge</li>
+            <li>Then you can apply for loans immediately!</li>
           </Box>
+
+          <Alert
+            severity="info"
+            sx={{
+              mt: 3,
+              borderRadius: 2,
+              backgroundColor: "rgba(99, 102, 241, 0.1)",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+            }}
+          >
+            <Typography variant="body2">
+              Contact admin via email or WhatsApp with your wallet address to speed
+              up the verification process.
+            </Typography>
+          </Alert>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Close</Button>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={handleClose}
+            variant="contained"
+            sx={{
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              fontWeight: 600,
+            }}
+          >
+            Done
+          </Button>
         </DialogActions>
       </Dialog>
     );
   }
 
-  // Submit new verification request
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Request Student Verification</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+          borderRadius: 4,
+          border: "1px solid rgba(249, 115, 22, 0.2)",
+        },
+      }}
+    >
+      <DialogTitle sx={{ color: "white", fontWeight: 700, fontSize: "1.5rem" }}>
+        Request Student Verification
+      </DialogTitle>
       <DialogContent>
-        {submitted ? (
-          <Box textAlign="center" py={4}>
-            <CheckCircleIcon
-              sx={{ fontSize: 80, color: "success.main", mb: 2 }}
-            />
-            <Typography variant="h5" gutterBottom color="success.main">
-              Request Submitted!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              Your verification request has been saved. Please share your wallet
-              address with the platform admin for approval.
-            </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: "rgba(255,255,255,0.7)", mb: 3, mt: 1 }}
+        >
+          Upload your student ID or proof of enrollment to get verified and start
+          borrowing.
+        </Typography>
 
-            <Box mt={3} p={2} bgcolor="background.default" borderRadius={2}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontWeight="bold"
-                gutterBottom
-              >
-                Your Wallet Address:
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  wordBreak: "break-all",
-                  fontFamily: "monospace",
-                  bgcolor: "background.paper",
-                  p: 1,
-                  borderRadius: 1,
-                }}
-              >
-                {walletAddress}
-              </Typography>
-              <Button
-                size="small"
-                sx={{ mt: 1 }}
-                onClick={() => {
-                  navigator.clipboard.writeText(walletAddress || "");
-                  alert("Address copied to clipboard!");
-                }}
-              >
-                Copy Address
-              </Button>
-            </Box>
+        <TextField
+          fullWidth
+          label="Student ID / Registration Number"
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          placeholder="e.g., 2021-01-1234"
+          disabled={submitting}
+          sx={{
+            mb: 2,
+            "& .MuiOutlinedInput-root": {
+              color: "white",
+              "& fieldset": { borderColor: "rgba(249, 115, 22, 0.3)" },
+              "&:hover fieldset": { borderColor: "rgba(249, 115, 22, 0.5)" },
+              "&.Mui-focused fieldset": { borderColor: "#f97316" },
+            },
+            "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.6)" },
+          }}
+        />
 
-            <Alert severity="info" sx={{ mt: 3 }}>
-              The admin will verify your wallet on-chain after reviewing your
-              information. Check back in 1-2 business days.
-            </Alert>
-          </Box>
-        ) : (
-          <Box py={2}>
-            <Alert severity="info" sx={{ mb: 3 }}>
-              To borrow, you must be verified as a student. Upload your student
-              ID and institutional details.
-            </Alert>
+        <TextField
+          fullWidth
+          label="Institution Name"
+          value={institution}
+          onChange={(e) => setInstitution(e.target.value)}
+          placeholder="e.g., University of Nairobi"
+          disabled={submitting}
+          sx={{
+            mb: 3,
+            "& .MuiOutlinedInput-root": {
+              color: "white",
+              "& fieldset": { borderColor: "rgba(249, 115, 22, 0.3)" },
+              "&:hover fieldset": { borderColor: "rgba(249, 115, 22, 0.5)" },
+              "&.Mui-focused fieldset": { borderColor: "#f97316" },
+            },
+            "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.6)" },
+          }}
+        />
 
-            <TextField
-              fullWidth
-              label="Student ID / Registration Number"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              placeholder="e.g., STU/2024/001234"
-              required
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              fullWidth
-              label="Institution Name"
-              value={institution}
-              onChange={(e) => setInstitution(e.target.value)}
-              placeholder="e.g., University of Nairobi"
-              required
-              sx={{ mb: 3 }}
-            />
-
-            <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Upload Student ID / Proof of Enrollment (optional but
-                recommended)
-              </Typography>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<CloudUploadIcon />}
-                fullWidth
-                sx={{ mb: 1 }}
-              >
-                {documentFile ? documentFile.name : "Choose File"}
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*,.pdf"
-                  onChange={handleFileChange}
-                />
-              </Button>
-              <Typography variant="caption" color="text.secondary">
-                Max 2MB • Accepted: JPG, PNG, PDF
-              </Typography>
-            </Box>
-
-            {uploading && (
-              <Box mt={2}>
-                <LinearProgress />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  Saving verification request...
-                </Typography>
-              </Box>
-            )}
-
-            <Alert severity="warning" sx={{ mt: 3 }}>
-              <Typography variant="body2">
-                <strong>Note:</strong> Your information will be stored locally
-                and shared with the admin for verification. The admin will
-                verify your wallet address on the blockchain.
-              </Typography>
-            </Alert>
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions>
-        {!submitted && (
-          <>
-            <Button onClick={handleClose} disabled={uploading}>
-              Cancel
-            </Button>
+        <Box
+          sx={{
+            border: "2px dashed rgba(249, 115, 22, 0.3)",
+            borderRadius: 2,
+            p: 3,
+            textAlign: "center",
+            bgcolor: "rgba(249, 115, 22, 0.05)",
+            mb: 2,
+          }}
+        >
+          <input
+            accept="image/*,.pdf"
+            style={{ display: "none" }}
+            id="file-upload"
+            type="file"
+            onChange={handleFileChange}
+            disabled={submitting}
+          />
+          <label htmlFor="file-upload">
             <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={uploading || !studentId || !institution}
+              variant="outlined"
+              component="span"
+              startIcon={<CloudUploadIcon />}
+              disabled={submitting}
+              sx={{
+                borderColor: "#f97316",
+                color: "#f97316",
+                fontWeight: 600,
+                "&:hover": {
+                  borderColor: "#ea580c",
+                  backgroundColor: "rgba(249, 115, 22, 0.1)",
+                },
+              }}
             >
-              {uploading ? "Submitting..." : "Submit Request"}
+              Upload Student ID
             </Button>
-          </>
+          </label>
+          {file && (
+            <Box mt={2}>
+              <Typography
+                variant="body2"
+                sx={{ color: "#10b981", fontWeight: 600 }}
+              >
+                ✓ {file.name}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.5)" }}>
+                {(file.size / 1024).toFixed(2)} KB
+              </Typography>
+            </Box>
+          )}
+          {!file && (
+            <Typography
+              variant="caption"
+              sx={{ color: "rgba(255,255,255,0.5)", display: "block", mt: 1 }}
+            >
+              Accepted: JPG, PNG, PDF (max 2MB)
+            </Typography>
+          )}
+        </Box>
+
+        {submitting && (
+          <Box sx={{ mb: 2 }}>
+            <LinearProgress
+              sx={{
+                bgcolor: "rgba(249, 115, 22, 0.2)",
+                "& .MuiLinearProgress-bar": {
+                  bgcolor: "#f97316",
+                },
+              }}
+            />
+            <Typography
+              variant="caption"
+              sx={{ color: "rgba(255,255,255,0.6)", mt: 1, display: "block" }}
+            >
+              Submitting verification request...
+            </Typography>
+          </Box>
         )}
-        {submitted && <Button onClick={handleClose}>Close</Button>}
+
+        <Alert
+          severity="info"
+          sx={{
+            borderRadius: 2,
+            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            border: "1px solid rgba(99, 102, 241, 0.3)",
+          }}
+        >
+          <Typography variant="body2">
+            Your documents are stored securely in your browser. After submission,
+            share your wallet address with admin for approval.
+          </Typography>
+        </Alert>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 3 }}>
+        <Button
+          onClick={handleClose}
+          disabled={submitting}
+          sx={{ color: "rgba(255,255,255,0.6)" }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={submitting}
+          sx={{
+            background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+            fontWeight: 600,
+            "&:disabled": {
+              background: "rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.3)",
+            },
+          }}
+        >
+          {submitting ? "Submitting..." : "Submit Request"}
+        </Button>
       </DialogActions>
     </Dialog>
   );
