@@ -19,7 +19,7 @@ import {
   Snackbar,
   Paper, 
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+// import { useTheme } from "@mui/material/styles";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import WarningIcon from "@mui/icons-material/Warning";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -147,7 +147,7 @@ const ERC20_ABI = [
 ] as const;
 
 export default function Dashboard() {
-  const theme = useTheme();
+  // const theme = useTheme();
   const { address, isConnected, chain } = useAccount();
 
   // State
@@ -173,8 +173,7 @@ export default function Dashboard() {
   // Contract Reads
   const {
     data: totalRaw,
-    isLoading: isLoadingPool,
-    error: poolError,
+    isLoading: isLoadingPool,    
     refetch: refetchPool,
   } = useReadContract({
     address: CONTRACT_ADDRESS,
