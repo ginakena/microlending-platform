@@ -4,11 +4,7 @@ import {
   Box,
   Paper,
   Grid,
-  Avatar,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
+  Avatar,  
   Card,
   CardContent,
   Accordion,
@@ -26,12 +22,12 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import SchoolIcon from "@mui/icons-material/School";
-import { useState } from "react";
+// import { useState } from "react";
 
 const GridItem = Grid as React.ElementType;
 
 export default function HowItWorks() {
-  const [activeStep, setActiveStep] = useState(0);
+  // const [activeStep, setActiveStep] = useState(0);
 
   const studentSteps = [
     {
