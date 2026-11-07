@@ -490,8 +490,8 @@ export default function Dashboard() {
             component="h1"
             gutterBottom
             sx={{
-              fontWeight: 800,
-              background: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
+              fontWeight: 600,
+              background: "linear-gradient(135deg, #DE7272 0%, #DE7272 100%)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -534,7 +534,7 @@ export default function Dashboard() {
                   borderRadius: 10,
                   background: isVerified
                     ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                    : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    : "linear-gradient(135deg, #B93636 0%, #B93636 100%)",
                   color: "white",
                   border: "none",
                   boxShadow: isVerified
@@ -573,8 +573,8 @@ export default function Dashboard() {
               elevation={0}
               sx={{
                 p: 3,
-                background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                borderRadius: 4,
+                background: "linear-gradient(135deg, #ECE8AF0 0%, #ECE8AF0 100%)",
+                borderRadius: 2,
                 boxShadow: "0 8px 32px rgba(99, 102, 241, 0.3)",
                 position: "relative",
                 overflow: "hidden",
@@ -640,8 +640,8 @@ export default function Dashboard() {
               elevation={0}
               sx={{
                 p: 3,
-                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                borderRadius: 4,
+                background: "linear-gradient(135deg, #ECE8AF0 0%, #ECE8AF0 100%)",
+                borderRadius: 2,
                 boxShadow: "0 8px 32px rgba(249, 115, 22, 0.3)",
                 position: "relative",
                 overflow: "hidden",
@@ -698,8 +698,8 @@ export default function Dashboard() {
               elevation={0}
               sx={{
                 p: 3,
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                borderRadius: 4,
+                background: "linear-gradient(135deg, #ECE8AF0 0%, #ECE8AF0 100%)",
+                borderRadius: 2,
                 boxShadow: "0 8px 32px rgba(16, 185, 129, 0.3)",
                 position: "relative",
                 overflow: "hidden",
@@ -771,7 +771,7 @@ export default function Dashboard() {
                   variant="h5"
                   gutterBottom
                   sx={{
-                    fontWeight: 700,
+                    fontWeight: 500,
                     color: "white",
                     mb: 3,
                     display: "flex",
@@ -823,7 +823,7 @@ export default function Dashboard() {
                       <Typography
                         variant="h3"
                         sx={{
-                          fontWeight: 800,
+                          fontWeight: 500,
                           color: "#f97316",
                           mb: 1,
                         }}
@@ -907,7 +907,7 @@ export default function Dashboard() {
                       sx={{
                         py: 2,
                         borderRadius: 3,
-                        fontWeight: 700,
+                        fontWeight: 450,
                         fontSize: "1.1rem",
                         textTransform: "none",
                         background: needsRepayApproval
@@ -975,8 +975,8 @@ export default function Dashboard() {
                 disabled={!isConnected || isBusy || chain?.id !== sepolia.id}
                 sx={{
                   py: 3,
-                  borderRadius: 4,
-                  fontWeight: 700,
+                  borderRadius: 2,
+                  fontWeight: 450,
                   fontSize: "1.1rem",
                   textTransform: "none",
                   background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
@@ -1011,8 +1011,8 @@ export default function Dashboard() {
                 }
                 sx={{
                   py: 3,
-                  borderRadius: 4,
-                  fontWeight: 700,
+                  borderRadius: 2,
+                  fontWeight: 500,
                   fontSize: "1.1rem",
                   textTransform: "none",
                   background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
@@ -1030,12 +1030,12 @@ export default function Dashboard() {
                 }}
               >
                 {!isConnected
-                  ? "🔒 Connect Wallet"
+                  ? "Connect Wallet"
                   : !isVerified
-                    ? "⚠️ Verification Required"
+                    ? "Verification Required"
                     : hasActiveLoan
                       ? "✓ Loan Active"
-                      : "🎓 Apply for Loan"}
+                      : "Apply for Loan"}
               </Button>
 
               {/* Verification Button */}
@@ -1046,7 +1046,7 @@ export default function Dashboard() {
                     p: 3,
                     background: "rgba(245, 158, 11, 0.1)",
                     border: "1px solid rgba(245, 158, 11, 0.3)",
-                    borderRadius: 4,
+                    borderRadius: 2,
                     backdropFilter: "blur(10px)",
                   }}
                 >
@@ -1063,7 +1063,7 @@ export default function Dashboard() {
                     sx={{
                       borderColor: "#f59e0b",
                       color: "#f59e0b",
-                      fontWeight: 600,
+                      fontWeight: 0,
                       borderRadius: 3,
                       py: 1.5,
                       "&:hover": {
@@ -1103,12 +1103,12 @@ export default function Dashboard() {
         PaperProps={{
           sx: {
             background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-            borderRadius: 4,
+            borderRadius: 2,
             border: "1px solid rgba(249, 115, 22, 0.2)",
           },
         }}
       >
-        <DialogTitle sx={{ color: "white", fontWeight: 700, fontSize: "1.5rem" }}>
+        <DialogTitle sx={{ color: "white", fontWeight: 500, fontSize: "1.5rem" }}>
           Deposit to Pool
         </DialogTitle>
         <DialogContent>
@@ -1178,7 +1178,7 @@ export default function Dashboard() {
               disabled={isBusy || !depositAmount}
               sx={{
                 background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                fontWeight: 600,
+                fontWeight: 350,
               }}
             >
               {isBusy && pendingAction === "approve_deposit"
@@ -1194,7 +1194,7 @@ export default function Dashboard() {
               disabled={isBusy || !depositAmount}
               sx={{
                 background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                fontWeight: 600,
+                fontWeight: 350,
               }}
             >
               {isBusy && pendingAction === "deposit"
@@ -1221,7 +1221,7 @@ export default function Dashboard() {
           },
         }}
       >
-        <DialogTitle sx={{ color: "white", fontWeight: 700, fontSize: "1.5rem" }}>
+        <DialogTitle sx={{ color: "white", fontWeight: 500, fontSize: "1.5rem" }}>
           Apply for Loan
         </DialogTitle>
         <DialogContent>
@@ -1288,7 +1288,7 @@ export default function Dashboard() {
             disabled={isBusy}
             sx={{
               background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              fontWeight: 600,
+              fontWeight: 350,
             }}
           >
             {isBusy && pendingAction === "borrow"
@@ -1321,7 +1321,7 @@ export default function Dashboard() {
           sx={{
             width: "100%",
             borderRadius: 3,
-            fontWeight: 600,
+            fontWeight: 350,
             boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
           }}
         >

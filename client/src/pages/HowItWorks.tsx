@@ -32,7 +32,7 @@ export default function HowItWorks() {
   const studentSteps = [
     {
       label: "Connect Your Wallet",
-      icon: <AccountBalanceWalletIcon />,
+      icon: <AccountBalanceWalletIcon />, 
       description:
         "Connect your MetaMask or any Web3 wallet to the platform.\n\n Make sure you're on the Sepolia testnet.",
       details: [
@@ -207,7 +207,7 @@ export default function HowItWorks() {
             component="h1"
             gutterBottom
             sx={{
-              fontWeight: 800,
+              fontWeight: 600,
               background: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
@@ -228,6 +228,7 @@ export default function HowItWorks() {
             }}
           >
             Simple, transparent, and secure micro-lending for students.
+             <br />
             Get started in just a few steps.
           </Typography>
         </Box>
@@ -299,7 +300,7 @@ export default function HowItWorks() {
                         />
                         <Typography
                           variant="h6"
-                          sx={{ color: "white", fontWeight: 700 }}
+                          sx={{ color: "white", fontWeight: 600 }}
                         >
                           {step.label}
                         </Typography>
@@ -391,7 +392,7 @@ export default function HowItWorks() {
                   </Avatar>
                   <Typography
                     variant="h6"
-                    sx={{ color: "white", fontWeight: 700, mb: 1 }}
+                    sx={{ color: "white", fontWeight: 600, mb: 1 }}
                   >
                     {step.label}
                   </Typography>
@@ -446,7 +447,7 @@ export default function HowItWorks() {
                       <Box flex={1}>
                         <Typography
                           variant="h6"
-                          sx={{ color: "white", fontWeight: 700, mb: 1 }}
+                          sx={{ color: "white", fontWeight: 550, mb: 1 }}
                         >
                           {feature.title}
                         </Typography>
@@ -470,7 +471,7 @@ export default function HowItWorks() {
           <Typography
             variant="h4"
             textAlign="center"
-            sx={{ color: "white", fontWeight: 700, mb: 6 }}
+            sx={{ color: "white", fontWeight: 550, mb: 6 }}
           >
             Frequently Asked Questions
           </Typography>
@@ -528,15 +529,15 @@ export default function HowItWorks() {
           elevation={0}
           sx={{
             p: 6,
-            background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-            borderRadius: 4,
+            background: "linear-gradient(135deg, #ECE8AF0%, #ECE8AF0 100%)",
+            borderRadius: 2,
             textAlign: "center",
-            boxShadow: "0 8px 32px rgba(249, 115, 22, 0.4)",
+            boxShadow: "0 8px 32px rgba(240, 236, 233, 0.4)",
           }}
         >
           <Typography
             variant="h4"
-            sx={{ color: "white", fontWeight: 700, mb: 2 }}
+            sx={{ color: "white", fontWeight: 550, mb: 2 }}
           >
             Ready to Get Started?
           </Typography>
@@ -549,31 +550,31 @@ export default function HowItWorks() {
           </Typography>
           <Box display="flex" gap={2} justifyContent="center" flexWrap="wrap">
             <Chip
-              label="🔒 100% Secure"
+              label="100% Secure"
               sx={{
                 bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
-                fontWeight: 600,
+                fontWeight: 450,
                 px: 2,
                 py: 2.5,
               }}
             />
             <Chip
-              label="⚡ Instant Approval"
+              label="Instant Approval"
               sx={{
                 bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
-                fontWeight: 600,
+                fontWeight: 450,
                 px: 2,
                 py: 2.5,
               }}
             />
             <Chip
-              label="💰 5% Fixed Rate"
+              label="5% Fixed Rate"
               sx={{
                 bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
-                fontWeight: 600,
+                fontWeight: 450,
                 px: 2,
                 py: 2.5,
               }}

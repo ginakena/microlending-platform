@@ -229,7 +229,7 @@ export default function Borrow() {
             component="h1"
             gutterBottom
             sx={{
-              fontWeight: 800,
+              fontWeight: 600,
               background: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
@@ -264,11 +264,11 @@ export default function Borrow() {
                     px: 2,
                     py: 2.5,
                     fontSize: "1rem",
-                    fontWeight: 600,
-                    borderRadius: 10,
+                    fontWeight: 350,
+                    borderRadius: 8,
                     background: isVerified
                       ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                      : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                      : "linear-gradient(135deg, #F7D794 0%, #F7D794 100%)",
                     color: "white",
                     boxShadow: isVerified
                       ? "0 4px 20px rgba(16, 185, 129, 0.3)"
@@ -282,8 +282,8 @@ export default function Borrow() {
                     px: 2,
                     py: 2.5,
                     fontSize: "1rem",
-                    fontWeight: 500,
-                    borderRadius: 10,
+                    fontWeight: 400,
+                    borderRadius: 8,
                     background: "rgba(249, 115, 22, 0.1)",
                     color: "#f97316",
                     border: "1px solid rgba(249, 115, 22, 0.3)",
@@ -305,7 +305,7 @@ export default function Borrow() {
             severity="warning"
             sx={{
               mb: 4,
-              maxWidth: 800,
+              maxWidth: 600,
               mx: "auto",
               borderRadius: 3,
               backdropFilter: "blur(10px)",
@@ -323,7 +323,7 @@ export default function Borrow() {
             severity="warning"
             sx={{
               mb: 4,
-              maxWidth: 800,
+              maxWidth: 600,
               mx: "auto",
               borderRadius: 3,
               backgroundColor: "rgba(245, 158, 11, 0.1)",
@@ -343,7 +343,7 @@ export default function Borrow() {
               sx={{
                 background:
                   "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                fontWeight: 600,
+                fontWeight: 350,
               }}
             >
               Request Verification
@@ -357,7 +357,7 @@ export default function Borrow() {
             severity="info"
             sx={{
               mb: 4,
-              maxWidth: 800,
+              maxWidth: 600,
               mx: "auto",
               borderRadius: 3,
               backgroundColor: "rgba(99, 102, 241, 0.1)",
@@ -375,7 +375,7 @@ export default function Borrow() {
             severity="error"
             sx={{
               mb: 4,
-              maxWidth: 800,
+              maxWidth: 600,
               mx: "auto",
               borderRadius: 3,
               backgroundColor: "rgba(239, 68, 68, 0.1)",
@@ -549,7 +549,7 @@ export default function Borrow() {
                       px: 8,
                       py: 2.5,
                       borderRadius: 3,
-                      fontWeight: 700,
+                      fontWeight: 500,
                       fontSize: "1.1rem",
                       textTransform: "none",
                       background:
@@ -625,7 +625,7 @@ export default function Borrow() {
                         {isVerified ? (
                           <VerifiedUserIcon sx={{ color: "#10b981" }} />
                         ) : (
-                          <WarningIcon sx={{ color: "#f59e0b" }} />
+                          <WarningIcon sx={{ color: "#dad3c9" }} />
                         )}
                       </Avatar>
                     </ListItemIcon>
@@ -655,7 +655,7 @@ export default function Borrow() {
                           bgcolor:
                             isConnected && chain?.id === sepolia.id
                               ? "rgba(16, 185, 129, 0.2)"
-                              : "rgba(245, 158, 11, 0.2)",
+                              : "rgba(216, 214, 210, 0.2)",
                           width: 40,
                           height: 40,
                         }}
@@ -665,7 +665,7 @@ export default function Borrow() {
                             color:
                               isConnected && chain?.id === sepolia.id
                                 ? "#10b981"
-                                : "#f59e0b",
+                                : "#212120",
                           }}
                         />
                       </Avatar>
@@ -703,7 +703,7 @@ export default function Borrow() {
                           height: 40,
                         }}
                       >
-                        <SpeedIcon sx={{ color: "#6366f1" }} />
+                        <SpeedIcon sx={{ color: "#e7e7ee" }} />
                       </Avatar>
                     </ListItemIcon>
                     <ListItemText
@@ -736,7 +736,7 @@ export default function Borrow() {
                       sx={{
                         py: 1.5,
                         borderRadius: 3,
-                        fontWeight: 600,
+                        fontWeight: 500,
                         background:
                           "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                         boxShadow: "0 4px 16px rgba(245, 158, 11, 0.3)",
@@ -852,7 +852,7 @@ export default function Borrow() {
             variant="contained"
             sx={{
               background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              fontWeight: 600,
+              fontWeight: 450,
             }}
           >
             Got it!

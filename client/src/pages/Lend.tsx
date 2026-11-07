@@ -43,8 +43,8 @@ export default function Lend() {
             component="h1"
             gutterBottom
             sx={{
-              fontWeight: 800,
-              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              fontWeight: 450,
+              background: "linear-gradient(135deg, #6366f1 0%, #e2dbf4 100%)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -77,9 +77,9 @@ export default function Lend() {
                 px: 2,
                 py: 2.5,
                 fontSize: "1rem",
-                fontWeight: 600,
-                borderRadius: 10,
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                fontWeight: 450,
+                borderRadius: 8,
+                background: "linear-gradient(135deg, #8debcf 0%, #90d7c3 100%)",
                 color: "white",
                 boxShadow: "0 4px 20px rgba(16, 185, 129, 0.3)",
                 "& .MuiChip-icon": { color: "white" },
@@ -92,8 +92,8 @@ export default function Lend() {
                 px: 2,
                 py: 2.5,
                 fontSize: "1rem",
-                fontWeight: 600,
-                borderRadius: 10,
+                fontWeight: 450,
+                borderRadius: 8,
                 background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
                 color: "white",
                 boxShadow: "0 4px 20px rgba(99, 102, 241, 0.3)",
@@ -112,7 +112,7 @@ export default function Lend() {
                 background: "rgba(255, 255, 255, 0.05)",
                 backdropFilter: "blur(10px)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: 4,
+                borderRadius: 2,
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
               }}
             >
@@ -176,7 +176,7 @@ export default function Lend() {
                         px: 8,
                         py: 2.5,
                         borderRadius: 3,
-                        fontWeight: 700,
+                        fontWeight: 550,
                         fontSize: "1.1rem",
                         textTransform: "none",
                         background:
@@ -211,7 +211,7 @@ export default function Lend() {
                 background: "rgba(255, 255, 255, 0.05)",
                 backdropFilter: "blur(10px)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: 4,
+                borderRadius: 2,
                 height: "100%",
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
               }}
@@ -220,7 +220,7 @@ export default function Lend() {
                 <Typography
                   variant="h6"
                   gutterBottom
-                  sx={{ color: "white", fontWeight: 700, mb: 3 }}
+                  sx={{ color: "white", fontWeight: 600, mb: 3 }}
                 >
                   Why Lend with MicroLend?
                 </Typography>
@@ -230,8 +230,8 @@ export default function Lend() {
                       <Avatar
                         sx={{
                           bgcolor: "rgba(16, 185, 129, 0.2)",
-                          width: 40,
-                          height: 40,
+                          width: 20,
+                          height: 20,
                         }}
                       >
                         <TrendingUpIcon sx={{ color: "#10b981" }} />
@@ -258,8 +258,8 @@ export default function Lend() {
                       <Avatar
                         sx={{
                           bgcolor: "rgba(99, 102, 241, 0.2)",
-                          width: 40,
-                          height: 40,
+                          width: 20,
+                          height: 20,
                         }}
                       >
                         <VerifiedUserIcon sx={{ color: "#6366f1" }} />
@@ -286,8 +286,8 @@ export default function Lend() {
                       <Avatar
                         sx={{
                           bgcolor: "rgba(245, 158, 11, 0.2)",
-                          width: 40,
-                          height: 40,
+                          width: 20,
+                          height: 20,
                         }}
                       >
                         <SecurityIcon sx={{ color: "#f59e0b" }} />
@@ -314,8 +314,8 @@ export default function Lend() {
                       <Avatar
                         sx={{
                           bgcolor: "rgba(249, 115, 22, 0.2)",
-                          width: 40,
-                          height: 40,
+                          width: 20,
+                          height: 20,
                         }}
                       >
                         <SpeedIcon sx={{ color: "#f97316" }} />
@@ -350,15 +350,15 @@ export default function Lend() {
               elevation={0}
               sx={{
                 p: 3,
-                background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                borderRadius: 4,
+                background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0  100%)",
+                borderRadius: 2,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(99, 102, 241, 0.3)",
               }}
             >
               <Typography
                 variant="h3"
-                sx={{ color: "white", fontWeight: 800, mb: 1 }}
+                sx={{ color: "white", fontWeight: 500, mb: 1 }}
               >
                 5%
               </Typography>
@@ -372,15 +372,15 @@ export default function Lend() {
               elevation={0}
               sx={{
                 p: 3,
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                borderRadius: 4,
+                background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0  100%)",
+                borderRadius: 2,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(16, 185, 129, 0.3)",
               }}
             >
               <Typography
                 variant="h3"
-                sx={{ color: "white", fontWeight: 800, mb: 1 }}
+                sx={{ color: "white", fontWeight: 500, mb: 1 }}
               >
                 100%
               </Typography>
@@ -394,15 +394,15 @@ export default function Lend() {
               elevation={0}
               sx={{
                 p: 3,
-                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                borderRadius: 4,
+                background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0 100%)",
+                borderRadius: 2,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(249, 115, 22, 0.3)",
               }}
             >
               <Typography
                 variant="h3"
-                sx={{ color: "white", fontWeight: 800, mb: 1 }}
+                sx={{ color: "white", fontWeight: 500, mb: 1 }}
               >
                 0
               </Typography>
@@ -416,15 +416,15 @@ export default function Lend() {
               elevation={0}
               sx={{
                 p: 3,
-                background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                borderRadius: 4,
+                background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0 100%)",
+                borderRadius: 2,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(139, 92, 246, 0.3)",
               }}
             >
               <Typography
                 variant="h3"
-                sx={{ color: "white", fontWeight: 800, mb: 1 }}
+                sx={{ color: "white", fontWeight: 500, mb: 1 }}
               >
                 24/7
               </Typography>
@@ -441,15 +441,15 @@ export default function Lend() {
           sx={{
             mt: 6,
             p: 6,
-            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-            borderRadius: 4,
+            background: "linear-gradient(135deg, #ECE8AF0%, #ECE8AF0 100%)",
+            borderRadius: 1,
             textAlign: "center",
             boxShadow: "0 8px 32px rgba(99, 102, 241, 0.4)",
           }}
         >
           <Typography
             variant="h4"
-            sx={{ color: "white", fontWeight: 700, mb: 2 }}
+            sx={{ color: "white", fontWeight: 450, mb: 2 }}
           >
             Start Earning Today
           </Typography>
@@ -458,7 +458,7 @@ export default function Lend() {
             sx={{
               color: "rgba(255,255,255,0.9)",
               mb: 4,
-              maxWidth: 600,
+              maxWidth: 450,
               mx: "auto",
             }}
           >
@@ -472,9 +472,9 @@ export default function Lend() {
               sx={{
                 bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
-                fontWeight: 600,
-                px: 2,
-                py: 2.5,
+                fontWeight: 450,
+                px: 1,
+                py: 1.5,
                 "& .MuiChip-icon": { color: "white" },
               }}
             />
@@ -484,9 +484,9 @@ export default function Lend() {
               sx={{
                 bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
-                fontWeight: 600,
-                px: 2,
-                py: 2.5,
+                fontWeight: 450,
+                px: 1,
+                py: 1.5,
                 "& .MuiChip-icon": { color: "white" },
               }}
             />
@@ -496,9 +496,9 @@ export default function Lend() {
               sx={{
                 bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
-                fontWeight: 600,
-                px: 2,
-                py: 2.5,
+                fontWeight: 450,
+                px: 1,
+                py: 1.5,
                 "& .MuiChip-icon": { color: "white" },
               }}
             />
