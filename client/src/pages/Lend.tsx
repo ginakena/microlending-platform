@@ -351,7 +351,7 @@ export default function Lend() {
               sx={{
                 p: 3,
                 background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0  100%)",
-                borderRadius: 2,
+                borderRadius: 0.5,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(99, 102, 241, 0.3)",
               }}
@@ -373,7 +373,7 @@ export default function Lend() {
               sx={{
                 p: 3,
                 background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0  100%)",
-                borderRadius: 2,
+                borderRadius: 0.5,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(16, 185, 129, 0.3)",
               }}
@@ -395,7 +395,7 @@ export default function Lend() {
               sx={{
                 p: 3,
                 background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0 100%)",
-                borderRadius: 2,
+                borderRadius: 0.5,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(249, 115, 22, 0.3)",
               }}
@@ -417,7 +417,7 @@ export default function Lend() {
               sx={{
                 p: 3,
                 background: "linear-gradient(135deg, #ECE8AF0  0%, #ECE8AF0 100%)",
-                borderRadius: 2,
+                borderRadius: 0.5,
                 textAlign: "center",
                 boxShadow: "0 8px 32px rgba(139, 92, 246, 0.3)",
               }}

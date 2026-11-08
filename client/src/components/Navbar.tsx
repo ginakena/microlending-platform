@@ -9,7 +9,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { ConnectButton } from "@rainbow-me/rainbowkit"; // ← add this import
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export default function Navbar() {
   const location = useLocation();

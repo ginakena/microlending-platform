@@ -116,7 +116,7 @@ export default function VerificationDialog({
           },
         }}
       >
-        <DialogTitle sx={{ color: "white", fontWeight: 700 }}>
+        <DialogTitle sx={{ color: "white", fontWeight: 550 }}>
           Already Verified ✓
         </DialogTitle>
         <DialogContent>
@@ -138,7 +138,7 @@ export default function VerificationDialog({
             variant="contained"
             sx={{
               background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              fontWeight: 600,
+              fontWeight: 450,
             }}
           >
             Close
@@ -163,7 +163,7 @@ export default function VerificationDialog({
           },
         }}
       >
-        <DialogTitle sx={{ color: "white", fontWeight: 700 }}>
+        <DialogTitle sx={{ color: "white", fontWeight: 550 }}>
           Verification Request Submitted! 🎉
         </DialogTitle>
         <DialogContent>
@@ -228,7 +228,7 @@ export default function VerificationDialog({
             variant="contained"
             sx={{
               background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              fontWeight: 600,
+              fontWeight: 450,
             }}
           >
             Done
@@ -252,7 +252,7 @@ export default function VerificationDialog({
         },
       }}
     >
-      <DialogTitle sx={{ color: "white", fontWeight: 700, fontSize: "1.5rem" }}>
+      <DialogTitle sx={{ color: "white", fontWeight: 650, fontSize: "1.5rem" }}>
         Request Student Verification
       </DialogTitle>
       <DialogContent>
@@ -343,7 +343,7 @@ export default function VerificationDialog({
             <Box mt={2}>
               <Typography
                 variant="body2"
-                sx={{ color: "#10b981", fontWeight: 600 }}
+                sx={{ color: "#10b981", fontWeight: 450 }}
               >
                 ✓ {file.name}
               </Typography>
@@ -409,7 +409,7 @@ export default function VerificationDialog({
           disabled={submitting}
           sx={{
             background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-            fontWeight: 600,
+            fontWeight: 450,
             "&:disabled": {
               background: "rgba(255,255,255,0.1)",
               color: "rgba(255,255,255,0.3)",
